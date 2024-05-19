@@ -17,10 +17,10 @@ export default function MainApp() {
         setVideoUrls([...videoUrls, ...uploadedUrls])
     }
 
-    const [data, setData] = useState()
+    const [data, setData] = useState<any>()
     const fetchTranscript = async () => {
         try {
-            const response = await fetch(`/api/assemblyai/`, {
+            const response = await fetch(`/api/assemblyai/transcribe`, {
                 method: "GET"
             })
 
@@ -31,6 +31,7 @@ export default function MainApp() {
             console.error(error)
         }
     }
+    console.log(data.textWithTimeStamps.stringify)
     
 
     return (
