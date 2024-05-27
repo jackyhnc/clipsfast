@@ -9,15 +9,19 @@ export const POST = async (req: NextRequest, res: NextResponse) => {
     try {
         const reqBody = await req.json()
         const { transcriptTextWithEmeddedTimeStamps } = reqBody
-    
-        const prompt = `\
-        I will provide a transcript where each sentence is followed by a '@' and then a timestamp \
-        representing its position in the video. The video begins at the timestamp of @0. From this transcript, \
-        I need you to identify the most captivating segments, in timestamps, for viewers seeking to learn and be \
-        entertained. Each segment should contain at least 110 words to provide substantial content. Please prioritize \
-        controversial statements that promote engagement.\
 
-        Transcript:\
+        if (!transcriptTextWithEmeddedTimeStamps) {
+            return NextResponse.json({ error: 'Stopped AI from interpreting null / empty transcript.' })
+        }
+    
+        const prompt = `
+        I will provide a transcript where each sentence is followed by a '@' and then a timestamp
+        representing its position in the video. The video begins at the timestamp of @0. From this transcript,
+        I need you to identify the most captivating segments, in timestamps, for viewers seeking to learn and be
+        entertained. Each segment should contain at least 110 words to provide substantial content. Please prioritize
+        controversial statements that promote engagement.
+
+        Transcript:
         ${transcriptTextWithEmeddedTimeStamps}`
 
         const chatgptResponse: any = await openai.chat.completions.create({
@@ -29,8 +33,10 @@ export const POST = async (req: NextRequest, res: NextResponse) => {
                 },
                 {
                     role: "system",
-                    content: "You output no conversation, only the formatted timestamps in a list format in a \
-                    single line of text: [ {start: startTimestamp, end: endTimestamp} ]."
+                    content: `You output no conversation, only the formatted timestamps 
+                    in a list format in a single line of JSON: 
+                    [ {start: startTimestamp, end: endTimestamp} ].
+                    Output [] if the transcript is empty.`
                 },
             ],
             temperature: 1,
@@ -40,8 +46,18 @@ export const POST = async (req: NextRequest, res: NextResponse) => {
             presence_penalty: 0,
         });
 
-        const highlightedTimestamps = JSON.parse(chatgptResponse.choices[0].message.content)
-    
+        let highlightedTimestamps
+        try {
+            highlightedTimestamps = JSON.parse(chatgptResponse.choices[0].message.content)
+        } catch(error) {
+            return NextResponse.json({ error: 'Failed to parse the response from the AI.' })
+        }
+
+        console.log({
+            reqBody: reqBody,
+            highlightedTimestamps: highlightedTimestamps
+        })
+
         return NextResponse.json(highlightedTimestamps)
     } catch(error) {
         console.error(error)

@@ -1,14 +1,14 @@
+import { NextRequest, NextResponse } from "next/server";
 import { v4 as uuidv4 } from 'uuid'
-import { NextResponse } from "next/server";
 
-export const POST = async (req: NextResponse) => {
+export const POST = async (req: NextRequest, res: NextResponse) => {
     try {
         const ffmpeg = require('fluent-ffmpeg');
 
-        //const reqBody = await req.json()
-        //const { videoURL, highlightedTimestamps } = reqBody
-        const videoURL = "https://s3-ap-southeast-2.amazonaws.com/shotstack-assets/footage/skater.hd.mp4"
-        const highlightedTimestamps = [{start:14,end:24}]
+        const reqBody = await req.json()
+        const { videoURL, highlightedTimestamps } = reqBody
+        //const videoURL = "https://s3-ap-southeast-2.amazonaws.com/shotstack-assets/footage/skater.hd.mp4"
+        //const highlightedTimestamps = [{start:14,end:24}]
 
         const videoLength: number = await new Promise((resolve, reject) => {
             ffmpeg.ffprobe(videoURL, (err: any, metadata: any) => {
@@ -46,5 +46,6 @@ export const POST = async (req: NextResponse) => {
         return NextResponse.json(outputFilePaths)
     } catch (error) {
         console.error(error)
+        return NextResponse.json({ error: "Failed to edit and trim video" })
     }
 }

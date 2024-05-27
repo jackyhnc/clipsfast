@@ -17,17 +17,9 @@ export async function POST (req: NextRequest, res: NextResponse) {
 
         const transcriptText = transcript.text
         const nestedTranscriptObjWithTimestamps: any = transcript.words
-
         const transcriptObjWithTimestamps = nestedTranscriptObjWithTimestamps.flat()
 
-        type TTranscriptItemObject = {
-            text: string,
-            start: number | null,
-            end: number | null,
-        }
-
         let transcriptTextWithEmeddedTimeStamps = ""
-
         for (const wordObj of transcriptObjWithTimestamps) {
             let word = wordObj.text
 
