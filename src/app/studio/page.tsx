@@ -31,7 +31,6 @@ export default function MainApp() {
             console.error(error)
         }
     }
-    console.log(data.textWithTimeStamps.stringify)
     
 
     return (
