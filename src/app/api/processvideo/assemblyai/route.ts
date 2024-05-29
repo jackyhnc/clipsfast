@@ -1,18 +1,51 @@
 import { AssemblyAI } from 'assemblyai'
 import { NextRequest, NextResponse } from 'next/server'
 
+import { utapi } from '@/server/uploadthing'
+
 const client = new AssemblyAI({
     apiKey: process.env.ASSEMBLYAI_API_KEY || ""
 })
 
 export async function POST (req: NextRequest, res: NextResponse) {
     try {
-        const reqBody = await req.json()
-        const { audioURL } = reqBody
+        //const reqBody = await req.json()
+        //const { videoURL } = reqBody
+        const videoURL = "https://jackkhc.github.io/hostingThings/clipsfast/Rarest%20Pineapple%20World.mp4"
+        const videoNameRegex = /^https:\/\/.+?\/([^\/]+)\.[^\/]+$/
+        const videoName = videoURL.match(videoNameRegex)?.[1]
+        const processedAudioExtension = "mp3"
+        const processedAudioFileName = videoName + "." + processedAudioExtension
+        
+        const ffmpeg = require('fluent-ffmpeg')
+        const fs = require('fs')
+        
+        const relativeOutputFilePath = "./src/media/extracted_audio/"
+        const outputFilePath = relativeOutputFilePath + processedAudioFileName
+        
+        await new Promise<void>((resolve, reject) => {
+            ffmpeg(videoURL)
+                .output(outputFilePath)
+                .outputFormat(processedAudioExtension)
+                .audioCodec('libmp3lame')
+                .on("error", (error: any) => {
+                    console.error(`Error converting video to audio: ${processedAudioFileName}`, error);
+                    reject(error);
+                })
+                .on("progress", (progress: any) => {
+                    console.log(`Progress converting video to audio ${processedAudioFileName}: ${Math.floor(progress.percent)}%`);
+                })
+                .on("end", () => {
+                    console.log(`Finished converting video to audio: ${processedAudioFileName}`);
+                    resolve();
+                })
+                .run();
+        })
 
         const params = {
-            audio: audioURL,
+            audio: outputFilePath,
         }
+        
         const transcript = await client.transcripts.transcribe(params)
 
         const transcriptText = transcript.text
@@ -35,8 +68,9 @@ export async function POST (req: NextRequest, res: NextResponse) {
         }
 
         return NextResponse.json(transcriptTextWithEmeddedTimeStamps)
+        
     } catch (error) {
         console.error(error)
-        return NextResponse.json({ error: 'Failed to fetch transcript' })
+        return NextResponse.json({ error: 'Failed to process transcript' })
     }
 }

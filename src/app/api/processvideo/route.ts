@@ -3,12 +3,12 @@ import { v4 as uuidv4 } from 'uuid'
 
 export async function POST(req: NextRequest) {
     try {
-        const ffmpeg = require('fluent-ffmpeg');
-
         //const { videoURL } = req.body as any
-        const videoURL = "https://s3-ap-southeast-2.amazonaws.com/shotstack-assets/footage/skater.hd.mp4"
+        const videoURL = "https://github.com/jackkhc/clipsfast/blob/main/public/In%2010%20Minutes%20This%20Room%20Will%20Explode%20720p.mp4"
         const videoExtensionRegex = /\.(?<extension>[^.\/?#]+)(?:\?|$)/ 
         const videoExtension = videoURL.match(videoExtensionRegex)?.groups?.extension ?? "mp4"
+
+        const ffmpeg = require('fluent-ffmpeg');
         
         const assemblyaiRouteResponse = await fetch("http://localhost:3000/api/processvideo/assemblyai", {
             method: "POST",
@@ -68,14 +68,14 @@ export async function POST(req: NextRequest) {
                     .size("1080x1920")
                     .autopad()
                     .on("error", (error: any) => {
-                        console.error(`Error processing video: ${processedVideoName}`, error);
+                        console.error(`Error editing video: ${processedVideoName}`, error);
                         reject(error);
                     })
                     .on("progress", (progress: any) => {
-                        console.log(`Processing frames for ${processedVideoName}: ${progress.frames}`);
+                        console.log(`Progress editing video ${processedVideoName}: ${Math.floor(progress.percent)}%`);
                     })
                     .on("end", () => {
-                        console.log(`Finished processing: ${processedVideoName}`);
+                        console.log(`Finished editing video: ${processedVideoName}`);
                         resolve();
                     })
                     .run();
