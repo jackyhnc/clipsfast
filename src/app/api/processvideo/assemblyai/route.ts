@@ -1,22 +1,18 @@
 import { AssemblyAI } from 'assemblyai'
 import { NextRequest, NextResponse } from 'next/server'
 
-import { utapi } from '@/server/uploadthing'
-
 const client = new AssemblyAI({
     apiKey: process.env.ASSEMBLYAI_API_KEY || ""
 })
 
 export async function POST (req: NextRequest, res: NextResponse) {
     try {
-        //const reqBody = await req.json()
-        //const { videoURL } = reqBody
-        const videoURL = "https://jackkhc.github.io/hostingThings/clipsfast/Rarest%20Pineapple%20World.mp4"
+        const reqBody = await req.json()
+        const { videoURL } = reqBody
         const videoNameRegex = /^https:\/\/.+?\/([^\/]+)\.[^\/]+$/
         const videoName = videoURL.match(videoNameRegex)?.[1]
         const processedAudioExtension = "mp3"
         const processedAudioFileName = videoName + "." + processedAudioExtension
-        
         const ffmpeg = require('fluent-ffmpeg')
         const fs = require('fs')
         
@@ -68,7 +64,6 @@ export async function POST (req: NextRequest, res: NextResponse) {
         }
 
         return NextResponse.json(transcriptTextWithEmeddedTimeStamps)
-        
     } catch (error) {
         console.error(error)
         return NextResponse.json({ error: 'Failed to process transcript' })

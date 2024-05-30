@@ -18,7 +18,7 @@ export const POST = async (req: NextRequest, res: NextResponse) => {
         I will provide a transcript where each sentence is followed by a '@' and then a timestamp
         representing its position in the video. The video begins at the timestamp of @0. From this transcript,
         I need you to identify the most captivating segments, in timestamps, for viewers seeking to learn and be
-        entertained. Each segment should contain at least 110 words to provide substantial content. Please prioritize
+        entertained. Each segment must contain at least 110 words to provide substantial content. Please prioritize
         controversial statements that promote engagement.
 
         Transcript:
@@ -50,6 +50,7 @@ export const POST = async (req: NextRequest, res: NextResponse) => {
         try {
             highlightedTimestamps = JSON.parse(chatgptResponse.choices[0].message.content)
         } catch(error) {
+            console.log({ "Chatgpt message": chatgptResponse.choices[0].message.content })
             return NextResponse.json({ error: 'Failed to parse the response from the AI.' })
         }
 

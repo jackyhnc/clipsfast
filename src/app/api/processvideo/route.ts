@@ -1,10 +1,11 @@
 import { NextRequest, NextResponse } from "next/server"
-import { v4 as uuidv4 } from 'uuid'
 
 export async function POST(req: NextRequest) {
     try {
         //const { videoURL } = req.body as any
-        const videoURL = "https://github.com/jackkhc/clipsfast/blob/main/public/In%2010%20Minutes%20This%20Room%20Will%20Explode%20720p.mp4"
+        const videoURL = "https://jackkhc.github.io/hostingThings/clipsfast/In%2010%20Minutes%20This%20Room%20Will%20Explode%20720p.mp4"
+        const videoNameRegex = /^https:\/\/.+?\/([^\/]+)\.[^\/]+$/
+        const videoName = videoURL.match(videoNameRegex)?.[1]
         const videoExtensionRegex = /\.(?<extension>[^.\/?#]+)(?:\?|$)/ 
         const videoExtension = videoURL.match(videoExtensionRegex)?.groups?.extension ?? "mp4"
 
@@ -17,7 +18,7 @@ export async function POST(req: NextRequest) {
             },
             body: JSON.stringify(
                 {
-                    audioURL:videoURL
+                    videoURL: videoURL
                 }
             )
         })
@@ -47,25 +48,31 @@ export async function POST(req: NextRequest) {
         if (highlightedTimestamps.error) {
             throw new Error(highlightedTimestamps.error)
         }
-        console.log({"highlightedTimestamps": highlightedTimestamps})
-
 
         const outputFilePaths = []
+        console.log(highlightedTimestamps)
 
         for (const highlightedTimestamp of highlightedTimestamps) {
             const { start, end } = highlightedTimestamp
 
-            const processedVideoName = uuidv4() + "." + videoExtension
-            const relativeOutputFilePath = "./src/app/videos/"
+            const startTimeInSeconds = start / 1000
+            const endTimeInSeconds = end / 1000
+
+            const indexOfhighlightedTimestamp = highlightedTimestamps.findIndex((time:any) => {
+                return time.start === start && time.end === end
+            })
+            const processedVideoName = videoName + indexOfhighlightedTimestamp + "." + videoExtension
+            const relativeOutputFilePath = "./src/media/edited_videos/"
             const outputFilePath = relativeOutputFilePath + processedVideoName
     
             await new Promise<void>((resolve, reject) => {
                 ffmpeg(videoURL)
                     .output(outputFilePath)
-                    .videoCodec("libx264")
-                    .setStartTime(start)
-                    .duration(end - start)
+                    .setStartTime(startTimeInSeconds)
+                    .duration(endTimeInSeconds - startTimeInSeconds)
                     .size("1080x1920")
+                    .videoCodec("libx264")
+                    .audioCodec("libmp3lame")
                     .autopad()
                     .on("error", (error: any) => {
                         console.error(`Error editing video: ${processedVideoName}`, error);
@@ -84,7 +91,7 @@ export async function POST(req: NextRequest) {
             outputFilePaths.push(outputFilePath)
         }
 
-        return NextResponse.json(highlightedTimestamps)
+        return NextResponse.json(outputFilePaths)
     } catch (error) {
         console.error(error)
         return NextResponse.json({ error: "Failed to fetch processed video" })
