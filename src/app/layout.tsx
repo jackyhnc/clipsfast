@@ -4,8 +4,9 @@ import "./globals.css";
 
 import { NextSSRPlugin } from "@uploadthing/react/next-ssr-plugin";
 import { extractRouterConfig } from "uploadthing/server";
+import "@uploadthing/react/styles.css"
  
-import { ourFileRouter } from "@/app/api/processvideo/uploadthing/core";
+import { ourFileRouter } from "@/app/api/uploadthing/core";
 
 const inter = Inter({ subsets: ["latin"] });
 
