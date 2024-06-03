@@ -5,8 +5,7 @@ import VideoUploader from "@/components/VideoUpload"
 import Popup from "@/components/Popup"
 
 import { useEffect, useState, useRef } from "react"
-import { redirect } from 'next/navigation'
-import Link from "next/link"
+import RedirectButton from "@/components/RedirectButton"
 
 export default function UploadMediaPage() {
     const [mediaURLs, setMediaURLs] = useState<Array<string>>([])
@@ -48,11 +47,15 @@ export default function UploadMediaPage() {
         }
     }
 
-    const handleUploadComplete = () => {
+    const handleUploadComplete = (res: any) => {
         alert("upload complete")
+        const newMediaURLs = res.map((item: any) => {
+            return item.url
+        })
+        setMediaURLs([...mediaURLs, ...newMediaURLs])
     }
 
-    function UploadMediaMenu(props:any) {
+    function UploadMediaMenu(props: any) {
         const {inputLink, setInputLink} = props
         return (
             showUploadMediaMenu && 
@@ -79,15 +82,27 @@ export default function UploadMediaPage() {
                     <div className="flex flex-col gap-2">
                         <div className="font-medium">Using Local Files</div>
                         <VideoUploader 
-                            onUploadComplete={handleUploadComplete}
+                            onUploadComplete={(res) => handleUploadComplete(res)}
                             appearance={{
-                                button: "w-fit rounded-xl bg-[#ff0030] text-white px-3 py-2 font-bold",
+                                button: `w-fit rounded-xl bg-[#ff0030] text-white p-2 font-bold 
+                                hover:cursor-pointer
+                                ut-uploading:bg-[#f75e7a]`,
                                 container: "self-start",
                                 allowedContent: ""
                             }}
                             content={{
-                                button: <div className="w-fit rounded-xl bg-[#ff0030] text-white p-2 font-bold">Insert File</div>,
-                                allowedContent: <div className="text-xs">Video</div>
+                                button({isUploading}) {
+                                    if (isUploading) {
+                                        return <div className="">Uploading...</div>
+                                    }
+                                    return <div className="font-bold">Insert File</div>
+                                },
+                                allowedContent({isUploading}) {
+                                    if (isUploading) {
+                                        return<div className="text-xs line-clamp-2 text-center">Please wait for completion <br/> alert.</div>
+                                    }
+                                    return<div className="text-xs line-clamp-2 w-[120px]">Max Video Size: 1GB</div>
+                                }
                             }}
                         />
                     </div>
@@ -96,7 +111,15 @@ export default function UploadMediaPage() {
             </Popup>
         )
     }
-            //
+
+    const [handleAutoEditVideosErrorMsg, setHandleAutoEditVideosErrorMsg] = useState<string>("")
+    const handleAutoEditVideosError = () => {
+        if (!mediaURLs.length) {
+            console.log(handleAutoEditVideosErrorMsg)
+            setHandleAutoEditVideosErrorMsg("Insert a video first before editing.")
+        }
+
+    }
 
     return (
         <main className="m-20">
@@ -124,11 +147,21 @@ export default function UploadMediaPage() {
             >Upload Media</button>
             <UploadMediaMenu inputLink={inputLink} setInputLink={setInputLink} />
 
-            <div className="flex gap-6 mt-10 justify-end">
-                <button className="rounded-xl bg-[#8e8e8e] text-white p-3 font-bold">Continue to Editor</button>
-                <Link className="rounded-xl bg-[#ff0030] text-white p-3 font-bold"
-                    href="/"
-                >Auto Edit Videos</Link>
+            <div className="">            
+                <div className="flex gap-6 mt-10 justify-end">
+                    <button className="rounded-xl bg-[#8e8e8e] text-white p-3 font-bold h-fit">Continue to Editor</button>
+                    <RedirectButton 
+                        link="editing" 
+                        stateOfLink={mediaURLs.length ? true : false}
+                        data={mediaURLs}
+                    >
+                        <button 
+                            className="rounded-xl bg-[#ff0030] text-white p-3 font-bold h-fit" 
+                            onClick={() => handleAutoEditVideosError()}
+                        >Auto Edit Videos</button>
+                    </RedirectButton>
+                </div>
+                <div className="text-red-500 text-end w-full mt-2">{handleAutoEditVideosErrorMsg}</div>
             </div>
 
         </main>

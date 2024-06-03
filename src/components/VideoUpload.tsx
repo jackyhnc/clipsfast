@@ -6,8 +6,15 @@ interface UploadCompleteResponse {
   url: string
 }
 
+type ButtonCallbackArguments = {
+  ready: boolean;
+  isUploading: boolean;
+  uploadProgress: number;
+  fileTypes: string[];
+};
+
 type StyleField = string
-type ContentField = React.ReactNode
+type ContentField = React.ReactNode | ((args: ButtonCallbackArguments) => React.ReactNode)
 
 type UploadButtonProps = {
   onUploadComplete: (res: UploadCompleteResponse[]) => void
