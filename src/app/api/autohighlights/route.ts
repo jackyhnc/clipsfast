@@ -10,7 +10,7 @@ export async function POST(req: NextRequest) {
 
         const ffmpeg = require('fluent-ffmpeg');
         
-        const assemblyaiRouteResponse = await fetch("http://localhost:3000/api/processvideo/assemblyai", {
+        const assemblyaiRouteResponse = await fetch("http://localhost:3000/api/autohighlights/assemblyai", {
             method: "POST",
             headers: {
                 "Content-Type": "application/json"
@@ -29,7 +29,7 @@ export async function POST(req: NextRequest) {
             throw new Error(transcriptTextWithEmeddedTimeStamps.error)
         }
 
-        const chatgpRouteResponse = await fetch("http://localhost:3000/api/processvideo/chatgpt/", {
+        const chatgpRouteResponse = await fetch("http://localhost:3000/api/autohighlights/chatgpt/", {
             method: "POST", 
             headers:{
                 "Content-Type": "application/json"

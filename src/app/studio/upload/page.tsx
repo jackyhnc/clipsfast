@@ -3,13 +3,14 @@
 import VideoPlayer from "@/components/VideoPlayer"
 import VideoUploader from "@/components/VideoUpload"
 import Popup from "@/components/Popup"
-
-import { useEffect, useState, useRef } from "react"
 import RedirectButton from "@/components/RedirectButton"
 
-export default function UploadMediaPage() {
-    const [mediaURLs, setMediaURLs] = useState<Array<string>>([])
+import { useContext, useEffect, useState } from "react"
 
+import { MediaURLsContext } from "@/context/MediaURLsContext"
+
+export default function UploadMediaPage() {
+    const { mediaURLs, setMediaURLs } = useContext(MediaURLsContext)
     const [showUploadMediaMenu, setShowUploadMediaMenu] = useState<boolean>(false)
 
     const [inputLink, setInputLink] = useState<string>("")
@@ -85,7 +86,6 @@ export default function UploadMediaPage() {
                             onUploadComplete={(res) => handleUploadComplete(res)}
                             appearance={{
                                 button: `w-fit rounded-xl bg-[#ff0030] text-white p-2 font-bold 
-                                hover:cursor-pointer
                                 ut-uploading:bg-[#f75e7a]`,
                                 container: "self-start",
                                 allowedContent: ""
@@ -95,7 +95,7 @@ export default function UploadMediaPage() {
                                     if (isUploading) {
                                         return <div className="">Uploading...</div>
                                     }
-                                    return <div className="font-bold">Insert File</div>
+                                    return <div className="font-bold cursor-pointer">Insert File</div>
                                 },
                                 allowedContent({isUploading}) {
                                     if (isUploading) {
@@ -128,7 +128,7 @@ export default function UploadMediaPage() {
                 {mediaURLs.length ? <div className="rounded-lg bg-gray-200 flex gap-6 flex-row p-5 overflow-scroll w-fit">
                     {mediaURLs.map(url => {
                         return (
-                            <div className="w-52 flex flex-col gap-3">
+                            <div className="w-52 flex flex-col gap-3" key={url}>
                                 <div className="bg-gray-800 rounded-[4px] overflow-hidden">
                                     <VideoPlayer 
                                         url={url} 
@@ -151,9 +151,8 @@ export default function UploadMediaPage() {
                 <div className="flex gap-6 mt-10 justify-end">
                     <button className="rounded-xl bg-[#8e8e8e] text-white p-3 font-bold h-fit">Continue to Editor</button>
                     <RedirectButton 
-                        link="editing" 
+                        link="clips" 
                         stateOfLink={mediaURLs.length ? true : false}
-                        data={mediaURLs}
                     >
                         <button 
                             className="rounded-xl bg-[#ff0030] text-white p-3 font-bold h-fit" 
