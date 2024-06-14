@@ -10,16 +10,6 @@ export const POST = async (req: NextRequest, res: NextResponse) => {
         //const videoURL = "https://s3-ap-southeast-2.amazonaws.com/shotstack-assets/footage/skater.hd.mp4"
         //const highlightedTimestamps = [{start:14,end:24}]
 
-        const videoLength: number = await new Promise((resolve, reject) => {
-            ffmpeg.ffprobe(videoURL, (err: any, metadata: any) => {
-                if (err) {
-                    reject(err)
-                } else {
-                    resolve(metadata.format.duration)
-                }
-            })
-        })
-
         const outputFilePaths = []
 
         for (const highlightedTimestamp of highlightedTimestamps) {

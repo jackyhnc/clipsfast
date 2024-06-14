@@ -1,14 +1,48 @@
+import chalk from "chalk"
 import { NextRequest, NextResponse } from "next/server"
+import path from "path"
 
-export async function POST(req: NextRequest) {
+export const POST = async (req: NextRequest) => {
     try {
-        const { videoURL } = req.body as any
+        //const reqBody = await req.json()
+        //let { videoURL } = reqBody 
+        let videoURL = "https://www.youtube.com/watch?v=u8sW-NhGfXw&list=WL&index=70&t=193s"
         const videoNameRegex = /^https:\/\/.+?\/([^\/]+)\.[^\/]+$/
-        const videoName = videoURL.match(videoNameRegex)?.[1]
+        let videoName = decodeURIComponent(videoURL).match(videoNameRegex)?.[1] ?? "video_name"
         const videoExtensionRegex = /\.(?<extension>[^.\/?#]+)(?:\?|$)/ 
         const videoExtension = videoURL.match(videoExtensionRegex)?.groups?.extension ?? "mp4"
 
         const ffmpeg = require('fluent-ffmpeg');
+
+        const isYoutubeLinkRegex = /^(?:https?:\/\/)?(?:www\.)?(?:youtube\.com\/(?:watch\?v=|embed\/|v\/|user\/\S*#\S*\/\S*\/\S*\/|shorts\/)?|youtu\.be\/)([a-zA-Z0-9_-]{11})(?:\S+)?$/;
+        if (isYoutubeLinkRegex.test(videoURL)) {
+            const youtubeVideoURL = videoURL
+            const downloadedYoutubeVideoPathResponse = await fetch("http://localhost:3000/api/autohighlights/downloadytvideo", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify(
+                    {
+                        youtubeVideoURL: youtubeVideoURL
+                    }
+                )
+            })
+            if (!downloadedYoutubeVideoPathResponse.ok) {
+                throw new Error(`Error: ${downloadedYoutubeVideoPathResponse.statusText}`);
+            }
+
+            const downloadedYoutubeVideoName = await downloadedYoutubeVideoPathResponse.json()
+            if (downloadedYoutubeVideoName.error) {
+                throw new Error(downloadedYoutubeVideoName.error);
+            }
+
+            console.log(chalk.blue("Video URL:" + videoURL))
+            videoURL = downloadedYoutubeVideoName
+            videoName = downloadedYoutubeVideoName
+            //when url is youtube, videoURL for this api becomes the downloaded youtube video name (ex. watch=?id)
+        }
+
         
         const assemblyaiRouteResponse = await fetch("http://localhost:3000/api/autohighlights/assemblyai", {
             method: "POST",
@@ -29,7 +63,7 @@ export async function POST(req: NextRequest) {
             throw new Error(transcriptTextWithEmeddedTimeStamps.error)
         }
 
-        const chatgpRouteResponse = await fetch("http://localhost:3000/api/autohighlights/chatgpt/", {
+        const chatgptRouteResponse = await fetch("http://localhost:3000/api/autohighlights/chatgpt/", {
             method: "POST", 
             headers:{
                 "Content-Type": "application/json"
@@ -40,33 +74,40 @@ export async function POST(req: NextRequest) {
                 }
             )
         })
-        if (!chatgpRouteResponse.ok) {
+        if (!chatgptRouteResponse.ok) {
             throw new Error("Error with ChatGPT api response");
         }
-        const highlightedTimestamps = await chatgpRouteResponse.json()
+        const highlightedTimestamps = await chatgptRouteResponse.json()
         if (highlightedTimestamps.error) {
             throw new Error(highlightedTimestamps.error)
         }
 
         const outputFilePaths = []
-        console.log(highlightedTimestamps)
+
+        
+        const inputVideoFileNameToEdit = `${videoName}.${videoExtension}`
+        const relativeInputFilePathRouteToEdit = "./public/extracted_video/"    
+        const relativeInputFilePathToEdit = path.join(relativeInputFilePathRouteToEdit, inputVideoFileNameToEdit)
 
         for (const highlightedTimestamp of highlightedTimestamps) {
-            const { start, end } = highlightedTimestamp
+            const { start, end, title } = highlightedTimestamp
 
             const startTimeInSeconds = start / 1000
             const endTimeInSeconds = end / 1000
 
+            /*
             const indexOfhighlightedTimestamp = highlightedTimestamps.findIndex((time:any) => {
                 return time.start === start && time.end === end
             })
-            const processedVideoName = videoName + indexOfhighlightedTimestamp + "." + videoExtension
-            const relativeOutputFilePath = "./public/edited_videos/"
-            const outputFilePath = relativeOutputFilePath + processedVideoName
+            */
+
+            const outputVideoFileName = `${title}.${videoExtension}`
+            const relativeOutputFilePathRoute = "./public/edited_video/"
+            const relativeOutputFilePath = path.join(relativeOutputFilePathRoute, outputVideoFileName)
     
             await new Promise<void>((resolve, reject) => {
-                ffmpeg(videoURL)
-                    .output(outputFilePath)
+                ffmpeg(relativeInputFilePathToEdit)
+                    .output(relativeOutputFilePath)
                     .setStartTime(startTimeInSeconds)
                     .duration(endTimeInSeconds - startTimeInSeconds)
                     .size("1080x1920")
@@ -74,18 +115,21 @@ export async function POST(req: NextRequest) {
                     .audioCodec("libmp3lame")
                     .autopad()
                     .on("error", (error: any) => {
-                        console.error(`Error editing video: ${processedVideoName}`, error);
+                        console.error(`Error editing video: ${outputVideoFileName}`, error);
                         reject(error);
                     })
                     .on("progress", (progress: any) => {
-                        console.log(`Progress editing video ${processedVideoName}: ${Math.floor(progress.percent)}%`);
+                        console.log(`Progress editing video: ${outputVideoFileName}: ${Math.floor(progress.percent)}%`);
                     })
                     .on("end", () => {
-                        console.log(`Finished editing video: ${processedVideoName}`);
+                        console.log(`Finished editing video: ${outputVideoFileName}`);
                         resolve();
                     })
                     .run();
             })
+
+            const outputFilePath = relativeOutputFilePath.replace("./public","") 
+            //so when videoplayer uses these output links, it can use the root path without public in it
 
             outputFilePaths.push(outputFilePath)
         }

@@ -7,7 +7,7 @@ type TMainLayoutProps = {
 export default function MainLayout({ children }: TMainLayoutProps) {
 
     return (
-        <>       
+        <div className="pt-[50px]">       
             <nav className="bg-gray-300 h-[50px] w-full fixed top-0 z-[100]">
 
             </nav>
@@ -15,6 +15,6 @@ export default function MainLayout({ children }: TMainLayoutProps) {
             <MediaURLsContextProvider>
                 {children}
             </MediaURLsContextProvider>
-        </>
+        </div>
     )
 }
