@@ -1,3 +1,4 @@
+import Image from "next/image"
 import { useEffect } from "react"
 
 type TPopupProps = {
@@ -20,7 +21,7 @@ export default function Popup(props: TPopupProps) {
 
         window.addEventListener("mousedown",handleClickingOverlay)
         return () => {window.removeEventListener("mousedown",handleClickingOverlay)}
-    },[])
+    },[setPopupState])
     
     return (
         <div className="overlay-background flex items-center justify-center">
@@ -32,7 +33,12 @@ export default function Popup(props: TPopupProps) {
                     <div className="font-semibold">{title}</div>
                     <div className="p-2 hover:bg-[rgb(243,243,243)] rounded-full hover:cursor-pointer"
                     onClick={() => setPopupState(false)}>
-                        <img src="/assets/x.svg" className="size-5"/>
+                        <Image 
+                            src={"/assets/x.svg"}
+                            width={20}
+                            height={20}
+                            alt="Remove popup"
+                        />
                     </div>
                 </div>
 

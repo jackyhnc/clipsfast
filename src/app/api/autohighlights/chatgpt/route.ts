@@ -14,12 +14,12 @@ export const POST = async (req: NextRequest, res: NextResponse) => {
         if (!transcriptTextWithEmeddedTimeStamps) {
             return NextResponse.json({ error: 'Stopped AI from interpreting null or empty transcript.' })
         }
-    
+        //Please prioritize content that promotes engagement.
         const prompt = `
         I will provide a transcript where each sentence is followed by a '@' and a timestamp representing its position in the video. 
-        Please identify the most captivating segments from this transcript, in timestamps, for viewers seeking to learn and be entertained. 
-        Each segment must be 20000 to 60000 milliseconds long to provide substantial content. Provide an exciting title that hooks 
-        viewers, in lower-case, including emojis. Please prioritize content that promotes engagement.
+        Please identify the best segments from this transcript, in timestamps, for viewers seeking to learn and be entertained. 
+        Each segment must be from about 20000 to a max 60000 milliseconds long to provide substantial content. Provide an exciting title that hooks 
+        viewers, including emojis.
 
         Transcript:
         ${transcriptTextWithEmeddedTimeStamps}`
@@ -39,7 +39,7 @@ export const POST = async (req: NextRequest, res: NextResponse) => {
                 },
             ],
             temperature: 1,
-            max_tokens: 4096,
+            max_tokens: 4095,
             top_p: 1,
             frequency_penalty: 0,
             presence_penalty: 0,

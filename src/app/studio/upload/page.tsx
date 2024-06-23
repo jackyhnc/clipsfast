@@ -9,7 +9,7 @@ import { useContext, useEffect, useState } from "react"
 
 import { MediaURLsContext } from "@/context/MediaURLsContext"
 
-const googleYoutubeAPIKey = process.env.GOOGLE_YOUTUBE_API_KEY
+import { uploadProcessMedia } from "@/actions/uploadProcessMedia"
 
 export default function UploadMediaPage() {
     const { mediaURLs, setMediaURLs } = useContext(MediaURLsContext)
@@ -67,10 +67,10 @@ export default function UploadMediaPage() {
                     setInputLinkErrorMsg("Link has already been added.")
                 }
 
-                //download the yt video url, add mediaUrls w downlaoded video path. downloaded video paths in new folder in public
-                //in assmeblyai, extract audio from yt video downlaoded path.
                 setMediaURLs([...mediaURLs, inputLink])
                 setInputLink("")
+
+                
             } catch (error) {
                 console.error('Error checking video accessibility:', error);
                 setInputLinkErrorMsg("Error checking video accessibility.")
@@ -145,16 +145,17 @@ export default function UploadMediaPage() {
         setHandleAutoEditVideosErrorMsg("")
     }, [mediaURLs])
 
-    const handleAutoEditVideosError = () => {
+    const handleAutoEditVideosButton = () => {
         if (!mediaURLs.length) {
             setHandleAutoEditVideosErrorMsg("Insert a video first before editing.")
+            return
         }
     }
 
     return (
         <main className="px-20 py-10">
             <div className="flex flex-col gap-2">
-                <div className="font-medium text-xl">Video Files</div>
+                <div className="font-medium text-xl" onClick={async () => {await uploadProcessMedia("this worked")}}>Video Files</div>
                 {mediaURLs.length ? <div className="rounded-lg bg-gray-200 flex gap-6 flex-row p-5 overflow-scroll w-fit">
                     {mediaURLs.map(url => {
                         return (
@@ -165,7 +166,7 @@ export default function UploadMediaPage() {
                                         aspectRatio="auto"
                                     />
                                 </div>
-                                <div className="text-sm line-clamp-2 break-words">{url}</div>
+                                <div className="text-sm line-clamp-3 break-all">{url}</div>
                             </div>
                         )
                     })}
@@ -186,7 +187,7 @@ export default function UploadMediaPage() {
                     >
                         <button 
                             className="rounded-xl bg-[#ff0030] text-white p-3 font-bold h-fit" 
-                            onClick={() => handleAutoEditVideosError()}
+                            onClick={() => handleAutoEditVideosButton()}
                         >Auto Edit Videos</button>
                     </RedirectButton>
                 </div>

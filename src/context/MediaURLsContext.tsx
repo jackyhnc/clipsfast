@@ -4,18 +4,16 @@ import { useState, createContext } from "react"
 
 type TMediaURLsContextProps = {
     mediaURLs: Array<string>,
-    setMediaURLs: React.Dispatch<React.SetStateAction<string[]>>,
+    setMediaURLs: React.Dispatch<React.SetStateAction<Array<string>>>,
 }
+
 const defaultContext: TMediaURLsContextProps = {
     mediaURLs: [],
     setMediaURLs: () => {},
 }
 export const MediaURLsContext = createContext<TMediaURLsContextProps>(defaultContext)
 
-type TMediaURLsContextProvider = {
-    children: React.ReactNode
-}
-export default function MediaURLsContextProvider({children}: TMediaURLsContextProvider) {
+export default function MediaURLContextProvider({children}: {children: React.ReactNode}) {
     const [mediaURLs, setMediaURLs] = useState<Array<string>>([])
     
     return (
