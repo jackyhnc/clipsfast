@@ -17,34 +17,16 @@ export const metadata: Metadata = {
 };
 
 export default function RootLayout({children}: Readonly<{children: React.ReactNode}>) {
-  function Navbar() {
-    return (
-      <nav className="flex justify-left h-16 items-center px-12">
-        <div className="">
-          <Image
-            src={"assets/waitlist/logo.svg"}
-            alt="logo"
-            width={130}
-            height={60}
-          />
-        </div>
-      </nav>
-    )
-  }
   
   return (
     <html lang="en">
-      <body className={inter.className} style={{background:"#FFF5E1"}}>
+      <body className={inter.className} >
         <NextSSRPlugin
           routerConfig={extractRouterConfig(ourFileRouter)}
         />
         <TanstackProvider>
-          <Navbar />
           {children}
           
-          <div className="bg-[#0C1844] w-full text-white p-16">
-            @j4ckyhnc
-          </div>
         </TanstackProvider>
       </body>
     </html>

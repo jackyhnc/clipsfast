@@ -1,7 +1,7 @@
+"use server"
 
 import { initializeApp } from "firebase/app";
-import { getFirestore } from "firebase/firestore";
-import { collection, addDoc, getDocs } from "firebase/firestore"; 
+import { arrayUnion, getDoc, getFirestore, updateDoc, doc } from "firebase/firestore";
 
 // TODO: Replace the following with your app's Firebase project configuration
 // See: https://firebase.google.com/docs/web/learn-more#config-object
@@ -21,18 +21,32 @@ const app = initializeApp(firebaseConfig)
 const db = getFirestore(app)
 
 export const updateWaitlist = async (email: string) => {
-    //upload emial to firebase, if duplicates, send back
 
-    const existingDocs = await getDocs(collection(db, "clipsfast/waitlistEmails"));
+    const emailVerficationRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/
+    const isEmailValid = emailVerficationRegex.test(email)
+    if (!isEmailValid) {
+        return { success: false, message: "Email isn't valid" }
+    }
 
-    const isDuplicates = Object.keys(existingDocs).some((doc) => {
-        doc === email
-    });
+    const waitlistEmailsRef = doc(db, "clipsfast", "waitlistEmails")
 
-    if (isDuplicates) {
-        return "This email has already been added."
+    const docSnapshot = await getDoc(waitlistEmailsRef)
+
+    if (docSnapshot.exists()) {
+        const existingEmails = docSnapshot.data().emails
+
+        const isEmailAlreadyAdded = existingEmails.some((existingEmail: string) => existingEmail === email)
+
+        if (isEmailAlreadyAdded) {
+            return { success: false, message: "Email already added." }
+        } else {
+            updateDoc(waitlistEmailsRef, {
+                emails: arrayUnion(email)
+            })
+            return { success: true, message: "Sucessfully added!"}
+        }
+
     } else {
-        addDoc((collection(db, "clipsfast/waitlistEmails")), { email: email })
-        return "Success"
+        return { success: false, message: "Waitlist emails database doesn't exist."}
     }
 }
