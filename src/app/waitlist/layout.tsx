@@ -27,9 +27,11 @@ export default function WaitlistLayout({children}: {children: React.ReactNode}) 
             >
                 @j4ckyhnc
             </a>
-            <img
+            <Image
                 src="https://upload.wikimedia.org/wikipedia/commons/a/a5/Instagram_icon.png"
-                className="w-5"
+                alt="instagram logo"
+                width={20}
+                height={20}
             />
         </div>
     )

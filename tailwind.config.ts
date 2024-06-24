@@ -7,10 +7,10 @@ export default withUt({
         'infinite-scroll': 'infinite-scroll 20s linear infinite',
       },
       keyframes: {
-          'infinite-scroll': {
-              from: { transform: 'translateY(0)' },
-              to: { transform: 'translateY(-100%)' },
-          }
+        'infinite-scroll': {
+            from: { transform: 'translateY(0)' },
+            to: { transform: 'translateY(-100%)' },
+        }
       },
       backgroundImage: {
         "gradient-radial": "radial-gradient(var(--tw-gradient-stops))",

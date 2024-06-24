@@ -32,7 +32,7 @@ export default function ClipsDisplayPage() {
             //alert("Please insert a video file first before auto-edit can start.")
             router.push("upload")
         }
-    },[])
+    },[mediaURLs, router])
     if (!mediaURLs || !mediaURLs.length) {
         return (<RedirectionPage/>)
     }
@@ -126,7 +126,7 @@ export default function ClipsDisplayPage() {
                         const editedClipsPaths = editedClipsPathsObject.editedClipsPaths
 
                         return (
-                            <div className="">
+                            <div className="" key={editedClipsMediaURL}>
                                 <div className="">{editedClipsMediaURL}</div>
 
                                 <div className="rounded-lg bg-gray-200 flex flex-row gap-24 p-14">

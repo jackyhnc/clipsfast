@@ -1,7 +1,7 @@
 import Image from "next/image";
 import { WaitlistForm } from "./waitlistForm";
 
-export default function Home() {
+export default function WaitlistPage() {
   
   return (
     <main className="">
@@ -15,8 +15,11 @@ export default function Home() {
           
           <div className="">
             <div className="flex flex-col gap-2 text-xl text-[#0C1844]">
-                <div className="font-medium">Join the waitlist!</div>
-                <WaitlistForm />
+              <div className="">
+                <div className="">Join the waitlist!</div>
+                <div className="text-gray-500">No spam. Will shoot u an email when the product is done 👍</div>
+              </div>
+              <WaitlistForm />
             </div>
           </div>
         </div>

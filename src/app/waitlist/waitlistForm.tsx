@@ -20,7 +20,7 @@ export function WaitlistForm() {
     }
 
     return (
-        <div className="flex flex-col justify-center gap-2">
+        <div className="flex flex-col justify-center gap-2 relative">
             <form className="flex h-12" onSubmit={(e) => handleFormSubmit(e)}>
                 <input
                     name="email"
@@ -30,7 +30,7 @@ export function WaitlistForm() {
                 />
                 <button className="h-full bg-[#FF6969] text-white font-medium px-8 rounded-r-lg">Join</button>
             </form>
-            <div className={`text-[${outputMsgColor}]`}>{outputMsg}</div>
+            <div style={{color:outputMsgColor}} className="absolute bottom-0 translate-y-[120%]">{outputMsg}</div>
         </div>
     )
   }
