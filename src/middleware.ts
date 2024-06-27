@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 
 export function middleware(request: NextRequest) {
+    /*
     const allowedPaths = [
         "/_next",
         "/assets/waitlist/logo.svg"
@@ -18,6 +19,7 @@ export function middleware(request: NextRequest) {
     }
 
     return NextResponse.next();
+    */
 }
 
 export const config = {

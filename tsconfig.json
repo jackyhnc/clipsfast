@@ -22,6 +22,6 @@
       "@/*": ["./src/*"]
     }
   },
-  "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts"],
+  "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts", "src/app/api/autohighlights aws/actions/chatgpt.mjs", "src/app/api/autohighlights aws/actions/assemblyai.mjs", "src/app/api/autohighlights aws/actions/youtubedownload.mjs", "src/app/api/autohighlights aws/actions/trimvideo.mjs", "src/app/api/autohighlights aws/index.mjs", "src/app/api/autohighlights/downloadytvideo/route.mjs"],
   "exclude": ["node_modules"]
 }

@@ -1,47 +1,29 @@
-import chalk from "chalk"
-import { NextRequest, NextResponse } from "next/server"
-import path from "path"
+import path from "path" 
+import { youtubeDownload } from "./actions/youtubedownload.mjs"
+import { assemblyAITranscript } from "./actions/assemblyai.mjs"
+import Ffmpeg from "fluent-ffmpeg"
+import { v4 as uuid } from "uuid"
 
-export const POST = async (req: NextRequest) => {
-    try {
-        const reqBody = await req.json()
-        let { videoURL } = reqBody 
+export const handler = async (event) => {
+  try {
+        let { videoURL } = event 
         const videoNameRegex = /^https:\/\/.+?\/([^\/]+)\.[^\/]+$/
-        let videoName = decodeURIComponent(videoURL).match(videoNameRegex)?.[1] ?? "video_name"
+        let videoName = decodeURIComponent(videoURL).match(videoNameRegex)?.[1] ?? ("video_name_" + uuid())
         const videoExtensionRegex = /\.(?<extension>[^.\/?#]+)(?:\?|$)/ 
         const videoExtension = videoURL.match(videoExtensionRegex)?.groups?.extension ?? "mp4"
-
-        const ffmpeg = require('fluent-ffmpeg');
 
         const isYoutubeLinkRegex = /^(?:https?:\/\/)?(?:www\.)?(?:youtube\.com\/(?:watch\?v=|embed\/|v\/|user\/\S*#\S*\/\S*\/\S*\/|shorts\/)?|youtu\.be\/)([a-zA-Z0-9_-]{11})(?:\S+)?$/;
         if (isYoutubeLinkRegex.test(videoURL)) {
             const youtubeVideoURL = videoURL
-            const downloadedYoutubeVideoPathResponse = await fetch("http://localhost:3000/api/autohighlights/downloadytvideo", {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json"
-                },
-                body: JSON.stringify(
-                    {
-                        youtubeVideoURL: youtubeVideoURL
-                    }
-                )
-            })
-            if (!downloadedYoutubeVideoPathResponse.ok) {
-                throw new Error(`Error: ${downloadedYoutubeVideoPathResponse.statusText}`);
-            }
 
-            const downloadedYoutubeVideoName = await downloadedYoutubeVideoPathResponse.json()
-            if (downloadedYoutubeVideoName.error) {
-                throw new Error(downloadedYoutubeVideoName.error);
-            }
+            youtubeDownload(youtubeVideoURL)
 
-            console.log(chalk.blue("Video URL: " + videoURL))
             videoURL = downloadedYoutubeVideoName
             videoName = downloadedYoutubeVideoName
             //when url is youtube, videoURL for this api becomes the downloaded youtube video name (ex. watch=?id)
         }
 
+        const transcript = assemblyAITranscript(videoURL)
         
         const assemblyaiRouteResponse = await fetch("http://localhost:3000/api/autohighlights/assemblyai", {
             method: "POST",
@@ -54,13 +36,6 @@ export const POST = async (req: NextRequest) => {
                 }
             )
         })
-        if (!assemblyaiRouteResponse.ok) {
-            throw new Error("Error with AssemblyAI api response");
-        }
-        const transcriptTextWithEmeddedTimeStamps = await assemblyaiRouteResponse.json()
-        if (transcriptTextWithEmeddedTimeStamps.error) {
-            throw new Error(transcriptTextWithEmeddedTimeStamps.error)
-        }
 
         const chatgptRouteResponse = await fetch("http://localhost:3000/api/autohighlights/chatgpt/", {
             method: "POST", 
@@ -82,7 +57,7 @@ export const POST = async (req: NextRequest) => {
         }
 
 
-        const outputFilePaths: Array<string> = []
+        const outputFilePaths = []
 
         const inputVideoFileNameToEdit = `${videoName}.${videoExtension}`
         const relativeInputFilePathRouteToEdit = "./public/extracted_video/"    
@@ -104,8 +79,8 @@ export const POST = async (req: NextRequest) => {
             const relativeOutputFilePathRoute = "./public/edited_video/"
             const relativeOutputFilePath = path.join(relativeOutputFilePathRoute, outputVideoFileName)
     
-            await new Promise<void>((resolve, reject) => {
-                ffmpeg(relativeInputFilePathToEdit)
+            await new Promise((resolve, reject) => {
+                Ffmpeg(relativeInputFilePathToEdit)
                     .output(relativeOutputFilePath)
                     .setStartTime(startTimeInSeconds)
                     .duration(endTimeInSeconds - startTimeInSeconds)
@@ -113,11 +88,11 @@ export const POST = async (req: NextRequest) => {
                     .videoCodec("libx264")
                     .audioCodec("libmp3lame")
                     .autopad()
-                    .on("error", (error: any) => {
+                    .on("error", (error) => {
                         console.error(`Error editing video: ${outputVideoFileName}`, error);
                         reject(error);
                     })
-                    .on("progress", (progress: any) => {
+                    .on("progress", (progress) => {
                         console.log(`Progress editing video: ${outputVideoFileName}: ${Math.floor(progress.percent)}%`);
                     })
                     .on("end", () => {
@@ -137,9 +112,10 @@ export const POST = async (req: NextRequest) => {
             editedClipsPaths: outputFilePaths
         }
 
-        return NextResponse.json(videoURLOutputPathsObject)
+        return videoURLOutputPathsObject
     } catch (error) {
         console.error(error)
-        return NextResponse.json({ error: "Failed to fetch processed video" })
+        return { error: "Failed to fetch processed video" }
     }
-}
+};
+

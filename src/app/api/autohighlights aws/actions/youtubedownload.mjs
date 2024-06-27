@@ -1,8 +1,7 @@
-import { NextRequest, NextResponse } from "next/server";
 import ytdl from "ytdl-core";
 import fs from "fs";
 
-const sanitizeFilename = (filename: string) => {
+const sanitizeFilename = (filename) => {
   const invalidCharsRegex = /[^\w\s\-._(){}[\]~!,'@#$%+=]/g;
 
   const sanitizedFilename = filename.replace(invalidCharsRegex, "_");
@@ -10,17 +9,13 @@ const sanitizeFilename = (filename: string) => {
   return sanitizedFilename.replace(/\s+/g, " ").trim();
 }; //sanitize file before ffmpeg can open it bc invalid characters form yt vid title
 
-export const POST = async (req: NextRequest) => {
-  const reqBody = await req.json();
-  const { youtubeVideoURL } = reqBody;
-
-  const youtubeVideoInfo = await ytdl.getBasicInfo(youtubeVideoURL);
+export const youtubeDownload = async (ytvideoURL) => {
+  const youtubeVideoInfo = await ytdl.getBasicInfo(ytvideoURL);
 
   const youtubeVideoTitle = youtubeVideoInfo.videoDetails.title;
   const sanitizedYoutubeVideoTitle = sanitizeFilename(youtubeVideoTitle);
 
   const youtubeVideoFormats = ytdl.chooseFormat(youtubeVideoInfo.formats, { quality: 1080 }) 
-  //maybe problme w donwload is too high res so make everything 1080p download
   const videoQualityITag = 137 //for mp4, 1080p
 
   const outputVideoName = "ytdl-" + (sanitizedYoutubeVideoTitle?? "ytdl-No_Youtube_Title");
@@ -30,7 +25,7 @@ export const POST = async (req: NextRequest) => {
   const outputFilePath = relativeOutputFilePath + outputVideoFileName;
 
   try {
-    const downloadStream = ytdl(youtubeVideoURL, { quality: videoQualityITag });
+    const downloadStream = ytdl(ytvideoURL, { quality: videoQualityITag });
     
     const writeStream = fs.createWriteStream(outputFilePath);
 
@@ -46,27 +41,27 @@ export const POST = async (req: NextRequest) => {
       }
     });
 
-    downloadStream.on("data", (chunk: Buffer) => {
+    downloadStream.on("data", (chunk) => {
         downloadedSize += chunk.length;
 
         const progress = (downloadedSize / totalSize) * 100;
         console.log(`Download progress: ${progress.toFixed(2)}%`);
     });
 
-    const downloadComplete = new Promise<void>((resolve, reject) => {
+    const downloadComplete = new Promise((resolve, reject) => {
           downloadStream.on("end", () => {
           console.log(`Total size: ${totalSize} bytes`);
           console.log(`Downloaded size: ${downloadedSize} bytes`);
           resolve();
       });
 
-          downloadStream.on("error", (err: Error) => {
+          downloadStream.on("error", (err) => {
           console.error("Error downloading the video:", err);
           reject(err);
       });
 
           writeStream.on("finish", resolve);
-          writeStream.on("error", (err: Error) => {
+          writeStream.on("error", (err) => {
           console.error("Error writing to the output file:", err);
           reject(err);
       });
@@ -76,9 +71,9 @@ export const POST = async (req: NextRequest) => {
 
     await downloadComplete
 
-    return NextResponse.json(outputVideoName);
+    return outputVideoName
   } catch (error) {
     console.error(error);
-    return NextResponse.json({ error: "Failed to download YouTube video." });
+    return { error: "Failed to download YouTube video." }
   }
 };
