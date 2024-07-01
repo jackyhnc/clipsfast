@@ -22,6 +22,6 @@
       "@/*": ["./src/*"]
     }
   },
-  "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts", "src/app/api/autohighlights aws/actions/chatgpt.mjs", "src/app/api/autohighlights aws/actions/assemblyai.mjs", "src/app/api/autohighlights aws/actions/youtubedownload.mjs", "src/app/api/autohighlights aws/actions/trimvideo.mjs", "src/app/api/autohighlights aws/index.mjs", "src/app/api/autohighlights/downloadytvideo/route.mjs"],
+  "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts", "src/app/api/aws/actions/chatgptAutoHighlights.mjs", "src/app/api/aws/actions/assemblyAITranscript.mjs", "src/app/api/aws/actions/YTDLVideo.mjs", "src/app/api/aws/actions/trimvideo.mjs", "src/app/api/aws/index.mjs", "src/app/api/autohighlights/downloadytvideo/route.mjs", "src/app/api/test/dlcaptions/route.js", "src/app/api/test/route.js"],
   "exclude": ["node_modules"]
 }

@@ -3,7 +3,7 @@ import ytdl from "ytdl-core";
 import fs from "fs";
 import { v3 as uuid } from "uuid"
 
-import uploadStreamToS3 from "@/app/api/autohighlights aws/actions/functions/uploadStreamToS3.mjs"
+import uploadStreamToS3 from "@/app/api/aws/actions/functions/uploadStreamToS3.mjs"
 
 export const POST = async (req) => {
   const youtubeVideoURL = "https://www.youtube.com/watch?v=AaBBKRKWI-k"

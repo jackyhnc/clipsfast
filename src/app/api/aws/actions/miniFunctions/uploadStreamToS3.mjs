@@ -1,8 +1,6 @@
-import ytdl from 'ytdl-core';
 import { S3Client, GetObjectCommand } from "@aws-sdk/client-s3";
 import { Upload } from '@aws-sdk/lib-storage';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
-import { PassThrough } from 'stream';
 
 const s3Client = new S3Client({
   credentials: {
@@ -12,11 +10,10 @@ const s3Client = new S3Client({
   region: process.env.AWS_REGION,
 })
 
-export const uploadStreamToS3 = async (stream, keyFilePath) => {
+const uploadStreamToS3 = async (stream, keyFilePath) => {
   const uploadParams = {
     Bucket: process.env.AWS_S3_BUCKET_NAME,
     Key: keyFilePath,
-    ContentType: "video/mp4",
     Body: stream,
   }
   const upload = new Upload({
@@ -26,6 +23,7 @@ export const uploadStreamToS3 = async (stream, keyFilePath) => {
   
   try {    
     await upload.done()
+    console.log("Uploaded to: " + keyFilePath)
 
     const getObjectParams = {
       Bucket: process.env.AWS_S3_BUCKET_NAME,
@@ -39,3 +37,4 @@ export const uploadStreamToS3 = async (stream, keyFilePath) => {
     console.error(error)
   }
 }
+export default uploadStreamToS3

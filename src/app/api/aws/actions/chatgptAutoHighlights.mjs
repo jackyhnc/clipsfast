@@ -1,30 +1,28 @@
 import chalk from "chalk";
-import { NextRequest, NextResponse } from "next/server";
 import OpenAI from "openai";
 
 const openai = new OpenAI({
     apiKey: process.env.OPENAI_API_KEY,
 });
 
-export const POST = async (req: NextRequest, res: NextResponse) => {
+export default async function chatgptAutoHighlights (transcriptTextWithEmeddedTimeStamps, videoLengthRangeInSeconds) {
     try {
-        const reqBody = await req.json()
-        const { transcriptTextWithEmeddedTimeStamps } = reqBody
+        const videoLengthRangeInMiliseconds = videoLengthRangeInSeconds.map((value) => {value / 1000})
+        const [videoLengthRangeInMilisecondsStart, videoLengthRangeInMilisecondsEnd] = videoLengthRangeInMiliseconds
 
         if (!transcriptTextWithEmeddedTimeStamps) {
-            return NextResponse.json({ error: 'Stopped AI from interpreting null or empty transcript.' })
+            throw new Error({ error: 'Stopped AI from interpreting null or empty transcript.' })
         }
-        //Please prioritize content that promotes engagement.
         const prompt = `
         I will provide a transcript where each sentence is followed by a '@' and a timestamp representing its position in the video. 
         Please identify the best segments from this transcript, in timestamps, for viewers seeking to learn and be entertained. 
-        Each segment must be from about 20000 to a max 60000 milliseconds long to provide substantial content. Provide an exciting title that hooks 
-        viewers, including emojis.
+        Each segment must be from ${videoLengthRangeInMilisecondsStart} to a max of ${videoLengthRangeInMilisecondsEnd}
+        milliseconds long to provide substantial content. Provide an exciting title that hooks viewers, including emojis.
 
         Transcript:
         ${transcriptTextWithEmeddedTimeStamps}`
 
-        const chatgptResponse: any = await openai.chat.completions.create({
+        const chatgptResponse = await openai.chat.completions.create({
             model: "gpt-3.5-turbo-0125",
             messages: [
                 {
@@ -34,8 +32,7 @@ export const POST = async (req: NextRequest, res: NextResponse) => {
                 {
                     role: "system",
                     content: `You output no conversation, only the formatted timestamps in a list format in a single line of 
-                    JSON: [ {start: startTimestamp, end: endTimestamp, title: titleOfSegment } ]. 
-                    Output [] if the transcript is empty.`
+                    JSON: [ {start: startTimestamp, end: endTimestamp, title: titleOfSegment } ]. `
                 },
             ],
             temperature: 1,

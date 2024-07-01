@@ -1,12 +1,12 @@
-import path from "path" 
-import { youtubeDownload } from "./actions/youtubedownload.mjs"
-import { assemblyAITranscript } from "./actions/assemblyai.mjs"
-import Ffmpeg from "fluent-ffmpeg"
 import { v4 as uuid } from "uuid"
+
+import YTDLVideo from "./actions/YTDLVideo.mjs";
+import assemblyAITranscript from "./actions/assemblyAITranscript.mjs"
+import chatgptAutoHighlights from "./actions/chatgptAutoHighlights.mjs";
 
 export const handler = async (event) => {
   try {
-        let { videoURL } = event 
+        let { videoURL, videoLengthRangeInSeconds } = event 
         const videoNameRegex = /^https:\/\/.+?\/([^\/]+)\.[^\/]+$/
         let videoName = decodeURIComponent(videoURL).match(videoNameRegex)?.[1] ?? ("video_name_" + uuid())
         const videoExtensionRegex = /\.(?<extension>[^.\/?#]+)(?:\?|$)/ 
@@ -16,26 +16,20 @@ export const handler = async (event) => {
         if (isYoutubeLinkRegex.test(videoURL)) {
             const youtubeVideoURL = videoURL
 
-            youtubeDownload(youtubeVideoURL)
+            const YTDL = await YTDLVideo(youtubeVideoURL)
+            
 
-            videoURL = downloadedYoutubeVideoName
-            videoName = downloadedYoutubeVideoName
+            videoURL = YTDL.url
+            videoName = videoTitle
             //when url is youtube, videoURL for this api becomes the downloaded youtube video name (ex. watch=?id)
         }
 
-        const transcript = assemblyAITranscript(videoURL)
+        const transcriptTextWithEmeddedTimeStamps = assemblyAITranscript(videoURL)
+
+        const highlightsTimestampsObj = chatgptAutoHighlights(transcriptTextWithEmeddedTimeStamps, videoLengthRangeInSeconds)
         
-        const assemblyaiRouteResponse = await fetch("http://localhost:3000/api/autohighlights/assemblyai", {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json"
-            },
-            body: JSON.stringify(
-                {
-                    videoURL: videoURL
-                }
-            )
-        })
+
+
 
         const chatgptRouteResponse = await fetch("http://localhost:3000/api/autohighlights/chatgpt/", {
             method: "POST", 
