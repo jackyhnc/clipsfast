@@ -40,12 +40,12 @@ export default async function YTDLAudioOnly (youtubeVideoURL) {
     });
     audioStream.on("end", () => {
       console.log("Audio download ended.")
-      console.log(`Audio upload ended in ${(( Date.now() - tracker.start) / 1000 ).toFixed(2)} seconds.`)
+      console.log(`Audio streamed ended in ${(( Date.now() - tracker.start) / 1000 ).toFixed(2)} seconds.`)
     })
     audioStream.on('error', () => {
       throw Error("Unable to download YouTube audio.")
     });
-
+    
 
     const audioKeyFilePath = `ytdl/audio/${outputVideoName}.m4a`
     const signedAudioURL = await uploadStreamToS3(audioStream, audioKeyFilePath)

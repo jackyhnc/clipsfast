@@ -6,6 +6,11 @@ const client = new AssemblyAI({
 
 export default async function assemblyAITranscript(videoURL) {
     try {
+        const tracker = {
+            start: Date.now(),
+            end: undefined,
+        }
+
         const params = {
             audio: videoURL,
         }
@@ -30,6 +35,9 @@ export default async function assemblyAITranscript(videoURL) {
             }
             transcriptTextWithEmeddedTimeStamps += word
         }
+
+        tracker.end = Date.now()
+        console.log(`assemblyAITranscript completed in ${( (tracker.start - tracker.end) / 1000 ).toFixed(2)} seconds/`)
         return transcriptTextWithEmeddedTimeStamps
     } catch (error) {
         console.error(error)

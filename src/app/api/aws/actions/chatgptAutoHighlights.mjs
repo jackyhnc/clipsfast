@@ -1,13 +1,17 @@
-import chalk from "chalk";
 import OpenAI from "openai";
 
 const openai = new OpenAI({
     apiKey: process.env.OPENAI_API_KEY,
 });
 
-export default async function chatgptAutoHighlights (transcriptTextWithEmeddedTimeStamps, videoLengthRangeInSeconds) {
+export default async function chatgptAutoHighlights ({
+        transcriptTextWithEmeddedTimeStamps = "", 
+        videoLengthRangeInSeconds = [20, 60], 
+        userPromptContent = "educate and entertain viewers", 
+        userPromptTitle = "hook viewers and include emojis",
+    } = {}) { 
     try {
-        const videoLengthRangeInMiliseconds = videoLengthRangeInSeconds.map((value) => {value / 1000})
+        const videoLengthRangeInMiliseconds = videoLengthRangeInSeconds?.map((value) => value * 1000)
         const [videoLengthRangeInMilisecondsStart, videoLengthRangeInMilisecondsEnd] = videoLengthRangeInMiliseconds
 
         if (!transcriptTextWithEmeddedTimeStamps) {
@@ -15,12 +19,19 @@ export default async function chatgptAutoHighlights (transcriptTextWithEmeddedTi
         }
         const prompt = `
         I will provide a transcript where each sentence is followed by a '@' and a timestamp representing its position in the video. 
-        Please identify the best segments from this transcript, in timestamps, for viewers seeking to learn and be entertained. 
-        Each segment must be from ${videoLengthRangeInMilisecondsStart} to a max of ${videoLengthRangeInMilisecondsEnd}
-        milliseconds long to provide substantial content. Provide an exciting title that hooks viewers, including emojis.
-
+        
+        Please identify the best segments from this transcript, in timestamps, that will 
+        ${userPromptContent ?? "educate and entertain viewers"}. 
+        
+        Each segment must be from ${videoLengthRangeInMilisecondsStart} milliseconds to a max of 
+        ${videoLengthRangeInMilisecondsEnd} milliseconds long to provide substantial content. 
+        
+        Provide a title that will ${userPromptTitle}.
+    
         Transcript:
         ${transcriptTextWithEmeddedTimeStamps}`
+
+        console.log(prompt)
 
         const chatgptResponse = await openai.chat.completions.create({
             model: "gpt-3.5-turbo-0125",
@@ -45,15 +56,14 @@ export default async function chatgptAutoHighlights (transcriptTextWithEmeddedTi
         let highlightedTimestamps
         try {
             highlightedTimestamps = JSON.parse(chatgptResponse.choices[0].message.content)
-            console.log(chalk.green(JSON.stringify(highlightedTimestamps, null, 2)))
         } catch(error) {
             console.log({ "Chatgpt message": chatgptResponse.choices[0].message.content })
             return NextResponse.json({ error: 'Failed to parse the response from the AI.' })
         }
 
-        return NextResponse.json(highlightedTimestamps)
+        return highlightedTimestamps
     } catch(error) {
         console.error(error)
-        return NextResponse.json({ error: 'Failed to fetch transcript highlights' })
+        return { error: 'Failed to fetch transcript highlights' }
     }
 }

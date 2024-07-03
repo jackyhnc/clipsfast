@@ -1,6 +1,6 @@
 "use client"
 import Image from "next/image";
-import { WaitlistForm } from "./waitlistForm";
+import { WaitlistForm } from "@/components/WaitlistForm";
 
 export default function WaitlistPage() {
 

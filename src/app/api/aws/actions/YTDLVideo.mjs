@@ -3,9 +3,9 @@ import { PassThrough } from 'stream';
 import { spawn } from "child_process";
 import { v4 as uuidv4 } from 'uuid'
 
-import uploadStreamToS3 from "./mini/uploadStreamToS3.mjs";
+import uploadStreamToS3 from "./miniFunctions/uploadStreamToS3.mjs"
 
-export default async function YTDLVIDEO (url) {
+export default async function YTDLVideo (url) {
   try {
     const tracker = {
       start: Date.now(),
