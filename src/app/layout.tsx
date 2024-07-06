@@ -12,6 +12,9 @@ import TanstackProvider from "@/providers/TanstackProvider";
 
 import { Analytics } from "@vercel/analytics/react"
 
+import { Toaster } from "@/components/ui/toaster"
+
+
 const inter = Inter({ subsets: ["latin"] });
 export const metadata: Metadata = {
   title: "ClipsFast",
@@ -30,6 +33,7 @@ import {
   navigationMenuTriggerStyle,
 } from "@/components/ui/navigation-menu"
 import Link from "next/link";
+import { AuthContextProvider } from "@/context/AuthContext";
 
 function Navbar() {
   return (
@@ -42,9 +46,9 @@ function Navbar() {
               <Image
                 src="/assets/logo.svg"
                 alt="logo"
-                width={130}
+                width={0}
                 height={0}
-                className="mr-4 cursor-pointer"
+                className="w-[130px]h-auto mr-4 cursor-pointer"
               />
      
             </Link>
@@ -97,11 +101,15 @@ export default function RootLayout({children}: Readonly<{children: React.ReactNo
         <NextSSRPlugin
           routerConfig={extractRouterConfig(ourFileRouter)}
         />
-        <TanstackProvider>
-          <Navbar />
-          {children}
-          
-        </TanstackProvider>
+        <AuthContextProvider>
+          <TanstackProvider>
+            <Navbar />
+            <main>
+              {children}  
+            </main>
+            <Toaster />
+          </TanstackProvider>
+        </AuthContextProvider>
       </body>
     </html>
   );
