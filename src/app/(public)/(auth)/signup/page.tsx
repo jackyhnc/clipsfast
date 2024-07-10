@@ -8,46 +8,31 @@ import {
 } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
-import { useToast } from "@/components/ui/use-toast"
 
-import { signup } from "@/actions/signup"
+import Image from "next/image"
 
-import { useEffect, useState } from "react"
+import { useState } from "react"
 
+import { UserAuth } from "@/context/AuthContext"
 
-export default function SignUpCard() {
-    type TSignupResponse = {
-        success: boolean | undefined,
-        message: string,
-    }
-    const defaultSignupError: TSignupResponse = {
-        success: undefined,
-        message: "",
-    }
+export default function SignupCard() {
+    const { signup } = UserAuth()
 
-    const { toast } = useToast()
     const handleFormSubmit = async (e: any) => {
         e.preventDefault()
 
         const formData = new FormData(e.target)
-        const newSignupResponse = await signup(formData)
-
-        if (!newSignupResponse.success) {
-            console.log('toast')
-            toast({
-                title: newSignupResponse.message,
-                variant: "destructive",
-                duration: 2000,
-            })
-        }
+        await signup(formData)
     }
+
+    const [showPassword, setShowPassword] = useState(false)
 
     return (
         <div className="bg-[var(--primary-bgcolor)]">
             <CardHeader>
                 <div className="mx-4 flex flex-col items-center gap-3">
                     <CardTitle>Register an account</CardTitle>
-                    <CardDescription>Enter your email to sign in to your account</CardDescription>
+                    <CardDescription>Enter an email to create a new account</CardDescription>
                 </div>
             </CardHeader>
             <CardContent>
@@ -58,13 +43,30 @@ export default function SignUpCard() {
                             id="email"
                             placeholder="Email"
                         />
-                        <Input
-                            name="password"
-                            id="password"
-                            placeholder="Password"
-                        />
+                        <div className="relative">
+                            <Input
+                                name="password"
+                                type={showPassword ? "text" : "password"}
+                                id="password"
+                                placeholder="Password"
+                            />
+                            <Button
+                                variant="ghost"
+                                onClick={() => setShowPassword(!showPassword)}
+                                type="button"
+                                className="absolute right-3 top-1/2 -translate-y-1/2 p-2 size-fit rounded-full"
+                            >
+                                <Image
+                                    src={showPassword ? "assets/auth/lock-open.svg" : "assets/auth/lock-closed.svg"}
+                                    alt="show password icon"
+                                    width={0}
+                                    height={0}
+                                    className="w-4 h-4"
+                                />
+                            </Button>
+                        </div>
                         <Button type="submit" name="submit">
-                            Continue
+                            Register
                         </Button>
                     </div>
                     <div className="relative flex justify-center text-xs uppercase">
@@ -72,7 +74,7 @@ export default function SignUpCard() {
                             Or continue with
                         </span>
                     </div>
-                    <Button variant="outline" className="bg-white border-muted-foreground">
+                    <Button variant="outline" className="bg-white border-muted-gray" type="button">
                         <div className="flex gap-3">
                             <img 
                                 src="https://upload.wikimedia.org/wikipedia/commons/thumb/c/c1/Google_%22G%22_logo.svg/1920px-Google_%22G%22_logo.svg.png?20230822192911" 

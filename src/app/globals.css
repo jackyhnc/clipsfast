@@ -2,14 +2,28 @@
 @tailwind components;
 @tailwind utilities;
 
+  /*
+  @media (prefers-color-scheme: dark) {
+    :root { 
+      --bg-white: black; 
+    } 
+  }
+  */
+
   @layer base {
     :root {
-      --yellow-white: #fff9ed;
-      --secondary-bgcolor: rgb(79, 79, 79);
+      --muted-gray: 	#e5e7eb;
+      --slight-gray: rgb(120, 120, 120);
+
+      --bg-yellow-white: #fff9ed;
+      --bg-white: #ffffff;
+      --bg-slight-gray: rgb(211, 211, 211);
 
       --purple-black: #0C1844;
       --salmon-orange: #FF6969;
       
+
+
       /*
       --primary-accentcolor: #FF6969;
       --secondary-accentcolor: #0C1844;

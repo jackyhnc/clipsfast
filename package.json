@@ -32,7 +32,7 @@
     "clsx": "^2.1.1",
     "ffmpeg": "^0.0.4",
     "ffprobe": "^1.1.2",
-    "firebase": "^10.12.2",
+    "firebase": "^10.12.3",
     "fluent-ffmpeg": "^2.1.3",
     "googleapis": "^140.0.1",
     "install": "^0.13.0",

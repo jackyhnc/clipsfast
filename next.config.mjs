@@ -8,6 +8,12 @@ const nextConfig = {
             port: '',
             pathname: '/wikipedia/commons/a/a5/**',
           },
+          {
+            protocol: 'https',
+            hostname: 'i.ytimg.com',
+            port: '',
+            pathname: '/vi/**',
+          },
         ],
       },
     

@@ -4,7 +4,7 @@ import Image from "next/image";
 export default function AuthPagesLayout({children}: {children: React.ReactNode}) {
 
     return (
-        <div className="w-full h-screen bg-blue bg-[var(--yellow-white)]">
+        <div className="w-full h-screen bg-blue bg-[var(--bg-yellow-white)]">
             <div className="flex flex-col items-center justify-center h-full relative">
                 <div className="z-10">
                     {children}

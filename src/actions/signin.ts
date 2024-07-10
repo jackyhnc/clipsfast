@@ -1,7 +1,7 @@
 "use server"
 
-import { signInWithEmailAndPassword } from "firebase/auth";
-import auth from "@/config/firebase";
+import { GoogleAuthProvider, signInWithEmailAndPassword, signInWithRedirect } from "firebase/auth";
+import { auth } from "@/config/firebase";
 
 export async function signin(formdata: FormData) {
     const email = formdata.get("email") as string
@@ -10,9 +10,29 @@ export async function signin(formdata: FormData) {
     try {
         await signInWithEmailAndPassword(auth, email, password)
 
+        return { success: true, message: "Sucessfully signed in!" }
+
     } catch (error: any) {
         const errorMessage = error.message;
-        const errorCode = error.code;
-        console.log(errorMessage, errorCode)
+        const errorCode = error.code;  
+        console.error(error)      
+
+        return { success: false, message: errorMessage, errorCode: errorCode }
+    }
+}
+
+export async function goasdfogleSignin() {
+    try {
+        const provider = new GoogleAuthProvider()
+        await signInWithRedirect(auth, provider)
+
+        return { success: true, message: "Sucessfully signed in!" }
+
+    } catch (error: any) {
+        const errorMessage = error.message;
+        const errorCode = error.code;  
+        console.error(error)      
+
+        return { success: false, message: errorMessage, errorCode: errorCode }
     }
 }

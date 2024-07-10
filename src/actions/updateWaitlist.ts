@@ -1,8 +1,7 @@
 "use server"
 
 import { arrayUnion, getDoc, getFirestore, updateDoc, doc } from "firebase/firestore";
-import app from "@/config/firebase"
-
+import { app } from "@/config/firebase"
 
 const db = getFirestore(app)
 
