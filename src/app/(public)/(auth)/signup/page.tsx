@@ -13,34 +13,21 @@ import { useToast } from "@/components/ui/use-toast"
 import { signup } from "@/actions/signup"
 
 import { useEffect, useState } from "react"
+import Image from "next/image"
+import { UserAuth } from "@/context/AuthContext"
 
 
-export default function SignUpCard() {
-    type TSignupResponse = {
-        success: boolean | undefined,
-        message: string,
-    }
-    const defaultSignupError: TSignupResponse = {
-        success: undefined,
-        message: "",
-    }
+export default function SignupCard() {
+    const { signup, googleSignin } = UserAuth()
 
-    const { toast } = useToast()
     const handleFormSubmit = async (e: any) => {
         e.preventDefault()
 
         const formData = new FormData(e.target)
-        const newSignupResponse = await signup(formData)
-
-        if (!newSignupResponse.success) {
-            console.log('toast')
-            toast({
-                title: newSignupResponse.message,
-                variant: "destructive",
-                duration: 2000,
-            })
-        }
+        await signup(formData)
     }
+
+    const [showPassword, setShowPassword] = useState(false)
 
     return (
         <div className="bg-[var(--primary-bgcolor)]">
@@ -53,18 +40,36 @@ export default function SignUpCard() {
             <CardContent>
                 <form className="flex flex-col gap-4" onSubmit={(e) => handleFormSubmit(e)}>
                     <div className="flex flex-col gap-2">
-                        <Input
+                    <Input
                             name="email"
                             id="email"
                             placeholder="Email"
                         />
-                        <Input
-                            name="password"
-                            id="password"
-                            placeholder="Password"
-                        />
+                        <div className="relative">
+                            <Input
+                                name="password"
+                                type={showPassword ? "text" : "password"}
+                                id="password"
+                                placeholder="Password"
+                            />
+                            <Button
+                                variant="ghost"
+                                onClick={() => setShowPassword(!showPassword)}
+                                type="button"
+                                className="absolute right-3 top-1/2 -translate-y-1/2 p-2 size-fit rounded-full"
+                            >
+                                <Image
+                                    src={showPassword ? "assets/auth/lock-open.svg" : "assets/auth/lock-closed.svg"}
+                                    alt="show password icon"
+                                    width={0}
+                                    height={0}
+                                    className="w-4 h-4"
+                                />
+                                
+                            </Button>
+                        </div>
                         <Button type="submit" name="submit">
-                            Continue
+                            Join
                         </Button>
                     </div>
                     <div className="relative flex justify-center text-xs uppercase">
@@ -72,7 +77,12 @@ export default function SignUpCard() {
                             Or continue with
                         </span>
                     </div>
-                    <Button variant="outline" className="bg-white border-muted-foreground">
+                    <Button 
+                        variant="outline" 
+                        className="bg-white border-muted-gray" 
+                        type="button"
+                        onClick={() => googleSignin()}
+                    >
                         <div className="flex gap-3">
                             <img 
                                 src="https://upload.wikimedia.org/wikipedia/commons/thumb/c/c1/Google_%22G%22_logo.svg/1920px-Google_%22G%22_logo.svg.png?20230822192911" 

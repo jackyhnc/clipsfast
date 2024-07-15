@@ -1,10 +1,30 @@
+"use client"
+
+import { auth } from "@/config/firebase";
+import { UserAuth } from "@/context/AuthContext";
+import { onAuthStateChanged } from "firebase/auth";
 import Image from "next/image";
+import { useRouter } from "next/navigation";
+import { useEffect } from "react";
 
 
 export default function AuthPagesLayout({children}: {children: React.ReactNode}) {
+    const { user } = UserAuth()
+    const router = useRouter()
+
+    useEffect(() => {
+        const checkAuth = () => {
+            onAuthStateChanged(auth, (user) => {
+                if (user) {
+                    router.push("/studio")
+                }
+            });
+        };
+        checkAuth();
+    }, []);
 
     return (
-        <div className="w-full h-screen bg-blue bg-[var(--yellow-white)]">
+        <div className="w-full h-screen bg-blue bg-[var(--bg-yellow-white)]">
             <div className="flex flex-col items-center justify-center h-full relative">
                 <div className="z-10">
                     {children}
