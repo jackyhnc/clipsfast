@@ -4,7 +4,7 @@ import { PassThrough } from 'stream';
 import { spawn } from "child_process";
 import { v4 as uuidv4 } from 'uuid'
 
-import { uploadStreamToS3 } from "../aws/actions/functions/uploadStreamToS3.mjs";
+import { uploadStreamToS3 } from "../aws/actions/miniFunctions/uploadStreamToS3.mjs";
 import chalk from "chalk";
 
 export const POST = async () => {

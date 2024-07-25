@@ -1,10 +1,8 @@
 "use server"
 
+import { db } from "@/config/firebase";
 import { arrayUnion, getDoc, getFirestore, updateDoc, doc } from "firebase/firestore";
-import app from "@/config/firebase"
 
-
-const db = getFirestore(app)
 
 export const updateWaitlist = async (email: string) => {
 

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 
 import Image from "next/image";
 import { useRouter } from "next/navigation";
@@ -21,177 +21,255 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import ProjectCardsSkeleton from "./_components/ProjectCardsSkeleton";
 
 import { db } from "@/config/firebase";
 import {
-  addDoc,
-  collection,
   doc,
   getDoc,
   onSnapshot,
   deleteDoc,
   updateDoc,
+  setDoc,
+  arrayUnion,
+  arrayRemove,
+  query,
+  where,
+  getDocs,
+  collection,
 } from "firebase/firestore";
 
 import { UserAuth } from "@/context/AuthContext";
-import chalk from "chalk";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+import { v4 as uuidv4 } from "uuid";
+import ytdl from "ytdl-core";
+import { getYoutubeInfo } from "@/actions/getYoutubeInfo";
+
+import { TProject } from "./types";
 
 export default function StudioDashboard() {
-  const { user } = UserAuth();
+  const { user } = UserAuth() as { user: any };
+
   const router = useRouter();
 
-  type TProject = {
-    ownerEmail: string;
-    projectID: string;
-    dateCreated: Date;
-
-    mediaURL: string;
-    name: string;
-    thumbnail: string;
-  };
   const [projects, setProjects] = useState<Array<TProject>>([]);
   useEffect(() => {
-    const newProject: TProject = {
-      dateCreated: new Date(),
-      mediaURL: "asdfasd.com/video",
-      name: "project",
-      ownerEmail: "asdf@gmail.com" || "",
-      thumbnail: "https://i.ytimg.com/vi/VKR8_4rqJ3I/hq720.jpg",
-      projectID: "",
-    };
-
-    setProjects([newProject]);
-  }, []);
-
+    setProjects((prev) =>
+      prev.sort((a, b) => b.dateCreatedTimestamp - a.dateCreatedTimestamp)
+    );
+  }, [projects.length]);
   //updates projects state on db side changes
-  console.log("user", user);
   useEffect(() => {
-    const userDocRef = doc(db, "users", user?.email);
+    const userDocRef = doc(db, "users", user.email);
+    const projectsRef = collection(db, "projects")
     const unsubscribe = onSnapshot(userDocRef, async (snapshot) => {
       const projectIDs: Array<string> = snapshot.data()?.projectsIDs ?? [];
 
-      const fetchedProjectsPromises = projectIDs.map(
-        async (projectID: string) => {
-          const projectDoc = await getDoc(doc(db, "projects", projectID));
-          const projectData = projectDoc.data();
+      if (!projectIDs.length) {
+        setProjects([]);
+        return;
+      }
 
-          return {
-            dateCreated: projectData?.dateCreated,
-            mediaURL: projectData?.mediaURL,
-            name: projectData?.name,
-            ownerEmail: projectData?.ownerEmail,
-            thumbnail: projectData?.thumbnail,
-            projectID: projectData?.projectID,
-          };
-        }
+      const fetchedProjectsQuery = query(projectsRef, where("projectID", "in", projectIDs))
+      const fetchedProjectsSnapshot = await getDocs(fetchedProjectsQuery)
+      const fetchedProjects: TProject[] = fetchedProjectsSnapshot.docs.map(doc => doc.data() as TProject)
+
+      const sanitizedFetchedProjects = fetchedProjects.filter(
+        (project) => project !== undefined
       );
-
-      const fetchedProjects = await Promise.all(fetchedProjectsPromises);
-      setProjects(fetchedProjects);
+      setProjects(sanitizedFetchedProjects);
     });
-
     return () => unsubscribe();
-  }, [user?.email, db]);
+  }, []);
 
-  const createProject = async (projectName = "Untitled", mediaURL = "") => {
-    const newProject: TProject = {
-      ownerEmail: user?.email || "",
-      dateCreated: new Date(),
-      projectID: "",
-
-      mediaURL: mediaURL,
-      name: projectName,
-      thumbnail: "",
-    };
-    const newProjectRef = await addDoc(collection(db, "projects"), newProject);
-    if (!newProjectRef) {
-      throw new Error("Failed to create project");
-    }
+  const deleteProject = async (projectID: string) => {
+    const projectRef = doc(db, "projects", projectID);
+    const userDocRef = doc(db, "users", user.email);
 
     try {
-      await updateDoc(newProjectRef, {
-        projectID: newProjectRef.id,
-      });
+      await deleteDoc(projectRef);
 
-      const userDocRef = doc(db, "users", user?.email || "");
-      const userDocSnapshot = await getDoc(userDocRef);
-      const userDocData = userDocSnapshot.data();
-      const updatedProjectsIDs = [
-        ...userDocData?.projectsIDs,
-        newProjectRef.id,
-      ];
-      const updatedUserDoc = {
-        ...userDocData,
-        projectsIDs: updatedProjectsIDs,
+      await updateDoc(userDocRef, {
+        projectsIDs: arrayRemove(projectID),
+      });
+    } catch (error) {
+      console.error(error);
+
+      toast({
+        title: "Unable to delete project.",
+        description: `Project ID: ${projectID}`,
+        duration: 2000,
+      });
+    }
+  };
+  const createProject = async (projectName: string, mediaURL: string) => {
+    const newProjectID = uuidv4();
+    const newProjectDate = new Date();
+    try {
+      const newProject: TProject = {
+        ownerEmail: user.email || "",
+        dateCreated: newProjectDate.toISOString(),
+        dateCreatedTimestamp: newProjectDate.getTime(),
+        projectID: newProjectID,
+
+        media: {
+          url: mediaURL,
+          type: undefined,
+        },
+        name: undefined,
+        thumbnail: undefined,
       };
-      await updateDoc(userDocRef, updatedUserDoc);
+      if (!(projectName.length === 0)) {
+        newProject.name = projectName;
+      }
+
+      const validateHostedMediaURL = async () => {
+        try {
+          const response = await fetch(mediaURL, { method: "HEAD" });
+          if (!response.ok) {
+            throw new Error("Failed to fetch video URL.");
+          }
+          const contentType = response.headers.get("content-type");
+          if (!contentType?.startsWith("video")) {
+            throw new Error("URL is not a video URL or YouTube video.");
+          }
+        } catch (error) {
+          throw new Error("Invalid video URL.");
+        }
+      };
+      const validateYoutubeURL = async () => {
+        try {
+          ytdl.validateURL(mediaURL);
+        } catch (error) {
+          throw new Error("Invalid YouTube link.");
+        }
+      };
+
+      const retrieveYoutubeInfo = async () => {
+        try {
+          const youtubeInfo = await getYoutubeInfo(mediaURL);
+
+          if (!newProject.name) {
+            newProject.name = youtubeInfo.title;
+          }
+
+          if (!newProject.thumbnail) {
+            newProject.thumbnail = youtubeInfo.thumbnails[4].url;
+          }
+        } catch (error) {
+          throw error;
+        }
+      };
+
+      const isYoutubeLinkRegex =
+        /^(?:https?:\/\/)?(?:www\.)?(?:youtube\.com\/(?:watch\?v=|embed\/|v\/|user\/\S*#\S*\/\S*\/\S*\/|shorts\/)?|youtu\.be\/)([a-zA-Z0-9_-]{11})(?:\S+)?$/;
+      if (mediaURL.match(isYoutubeLinkRegex)?.[1]) {
+        await validateYoutubeURL();
+        await retrieveYoutubeInfo();
+
+        newProject.media.type = "youtube";
+      } else {
+        await validateHostedMediaURL();
+
+        newProject.media.type = "hosted";
+      }
+
+      const newProjectRef = doc(db, "projects", newProjectID);
+      const userDocRef = doc(db, "users", user.email);
+
+      await setDoc(newProjectRef, newProject);
+
+      await updateDoc(userDocRef, {
+        projectsIDs: arrayUnion(newProjectID),
+      });
 
       toast({
         title: "Project created.",
-        description: `Project ID: ${newProjectRef.id}`,
+        description: `Project ID: ${newProjectID}`,
         duration: 2000,
       });
 
-      router.push(`/studio/${newProjectRef.id}`);
-    } catch (error) {
-      await deleteDoc(newProjectRef);
+      router.push(`/studio/project/${newProjectID}`);
+    } catch (error: any) {
       console.error(error);
-      throw error;
+
+      await deleteProject(newProjectID);
+
+      throw new Error(error);
     }
   };
-  const [buttonPressed, setButtonPressed] = useState(false);
+  
   function AddProjectsButton() {
-        const handleCreateProjectFormSubmit = (event: any) => {
-            event.preventDefault();
+    const [createProjectFormErrorMsg, setCreateProjectFormErrorMsg] =
+      useState("");
 
-            const projectName = event.target.elements.projectName.value;
-            const mediaURL = event.target.elements.url.value
+    const handleCreateProjectFormSubmit = async (e: any) => {
+      e.preventDefault();
 
-            //check if link to url is valid, if not put error
+      const projectNameInput = e.currentTarget.elements
+        .projectName as HTMLInputElement;
+      const mediaURLInput = e.currentTarget.elements.url as HTMLInputElement;
 
-            createProject(projectName, mediaURL);
-        }
+      const projectName = projectNameInput.value;
+      const mediaURL = mediaURLInput.value;
+
+      try {
+        await createProject(projectName, mediaURL);
+      } catch (error: any) {
+        console.error(error);
+        setCreateProjectFormErrorMsg(error.message);
+      }
+    };
 
     return (
       <Dialog>
         <DialogTrigger>
-          <Button className="p-3 bg-[var(--salmon-orange)]" onClick={() => setButtonPressed(true)}>
+          <Button className="p-3 bg-[var(--salmon-orange)]">
             <i className="fa-solid fa-plus text-lg"></i>
           </Button>
         </DialogTrigger>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle className="text-2xl">Ready to pump out viral shorts fast?</DialogTitle>
-            <DialogDescription>yes</DialogDescription>
+            <DialogTitle className="text-2xl">
+              Ready to pump out viral shorts fast?
+            </DialogTitle>
+            <DialogDescription>Create a new project</DialogDescription>
           </DialogHeader>
           <div className="">
             <form
               className="flex flex-col gap-4"
               onSubmit={(e) => handleCreateProjectFormSubmit(e)}
+              onChange={() => setCreateProjectFormErrorMsg("")}
             >
               <div className="flex flex-col space-y-6">
                 <div className="space-y-2">
-                    <Label htmlFor="url">Project Name</Label>
-                    <Input
-                    name="project name"
-                    id="name"
+                  <Label htmlFor="url">Project Name</Label>
+                  <Input
+                    name="projectName"
+                    id="projectName"
                     placeholder="Untitled"
-                    />
+                  />
                 </div>
                 <div className="space-y-2">
-                    <Label htmlFor="url">Input the video URL you want to use.</Label>
-                    <Input
-                        name="url"
-                        id="url"
-                        placeholder="URL"
-                        required
-                    />
+                  <Label htmlFor="url">
+                    Input the video URL you want to use.
+                  </Label>
+                  <Input name="url" id="url" placeholder="URL" required />
                 </div>
-                <Button type="submit" name="submit" className="bg-[var(--salmon-orange)]">
-                  Create Project
-                </Button>
+
+                <div className="space-y-2 flex flex-col">
+                  <Button
+                    type="submit"
+                    name="submit"
+                    className="bg-[var(--salmon-orange)]"
+                  >
+                    Create Project
+                  </Button>
+                  <Label className="text-red-500">
+                    {createProjectFormErrorMsg}
+                  </Label>
+                </div>
               </div>
             </form>
           </div>
@@ -199,9 +277,104 @@ export default function StudioDashboard() {
       </Dialog>
     );
   }
+  async function ProjectsCards() {
+    return (
+      <div
+      className="grid grid-cols-[repeat(auto-fit,218px)] gap-6 p-6 bg-[var(--bg-white)] 
+      border-2 rounded-lg"
+      >
+        {projects.length ? null : <div className="">No Projects</div> }
+        {projects.map((project) => {
+          const projectDateObject = new Date(project.dateCreated);
+          const projectDate = projectDateObject.toLocaleDateString("en-US", {
+            year: "numeric",
+            month: "short",
+            day: "2-digit",
+          });
 
+          return (
+            <div className="relative group/card" key={project.projectID}>
+              <div
+                className="bg-[var(--bg-white)] w-fit p-2 rounded-md hover:shadow-xl hover:scale-[1.01] 
+                transition fade-in-5 border-2 relative cursor-pointer"
+                onClick={() =>
+                  router.push(`/studio/project/${project.projectID}/clips`)
+                }
+              >
+                <TooltipProvider delayDuration={200}>
+                  <Tooltip>
+                    <TooltipTrigger>
+                      <div>
+                        {project.thumbnail ? (
+                          <Image
+                            src={project.thumbnail}
+                            alt="project thumbnail"
+                            width={200}
+                            height={0}
+                            className="h-auto rounded-sm aspect-[16/9] object-cover cursor-pointer"
+                          />
+                        ) : (
+                          <div className="rounded-sm w-[200px] bg-[var(--light-gray)] aspect-[16/9] flex">
+                            <i className="fa-solid fa-video text-5xl m-auto text-[var(--bg-white)]" />
+                          </div>
+                        )}
+                      </div>
+                    </TooltipTrigger>
+                    <TooltipContent>{project.media.url}</TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+                <div className="my-1 w-[200px] space-y-2">
+                  <div className="font-medium line-clamp-2 text-sm">
+                    {project.name ?? "Untitled"}
+                  </div>
+                  <div className="text-xs text-[var(--slight-gray)]">
+                    Date Created: {projectDate ?? "No Date Created"}
+                  </div>
+                </div>
+              </div>
+              <div className="absolute top-1 right-1">
+                <Dialog>
+                  <DialogTrigger className="">
+                    <div className="group-hover/card:opacity-100 opacity-0
+                    rounded-full hover:bg-[var(--light-gray)] bg-[var(--bg-white)] border-[1px] 
+                    flex transition fade-in p-1 z-10"
+                    >
+                      <Image
+                        src={"/assets/x.svg"}
+                        alt="x"
+                        width={20}
+                        height={20}
+                      />
+                    </div>
+                  </DialogTrigger>
+                  <DialogContent>
+                    <DialogHeader>
+                      <DialogTitle>Are you absolutely sure?</DialogTitle>
+                      <DialogDescription>
+                        This action cannot be undone. <br />
+                        Project ID: {project.projectID}
+                      </DialogDescription>
+                    </DialogHeader>
+                    <div className="flex w-full justify-center">
+                      <Button
+                        type="submit"
+                        variant="destructive"
+                        onClick={() => deleteProject(project.projectID)}
+                      >
+                        Delete Project
+                      </Button>
+                    </div>
+                  </DialogContent>
+                </Dialog>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    );
+  }
   return (
-    <div className="px-10 pt-14 pb-40 bg-[var(--bg-white)] min-h-lvh">
+    <div className="bg-[var(--bg-white)] min-h-lvh">
       <div className="space-y-6">
         <div className="flex gap-3 items-center">
           <div className="font-semibold text-2xl">Projects</div>
@@ -211,45 +384,9 @@ export default function StudioDashboard() {
         </div>
 
         <div className="">
-          <div className="flex flex-wrap gap-6 p-4 bg-[var(--bg-white)] border-2 rounded-lg items-center justify-center">
-            {projects.map((project) => {
-              const projectDate = `${project.dateCreated.getMonth()}/${project.dateCreated.getDay()}/${project.dateCreated.getFullYear()}`;
-              return (
-                <div
-                  key={project.name}
-                  className="bg-[var(--bg-white)] w-fit p-2 shadow-lg rounded-md 
-                                    hover:shadow-2xl transition fade-in-5 cursor-pointer border"
-                  onClick={() => router.push(`/${project.projectID}`)}
-                >
-                  <TooltipProvider>
-                    <Tooltip>
-                      <TooltipTrigger>
-                        <Image
-                          src={project.thumbnail}
-                          alt="project thumbnail"
-                          width={200}
-                          height={0}
-                          className="h-auto rounded-sm"
-                          style={{ width: "auto", height: "auto" }}
-                        />
-                      </TooltipTrigger>
-                      <TooltipContent>{project.mediaURL}</TooltipContent>
-                    </Tooltip>
-                  </TooltipProvider>
-                  <div className="my-1 overflow-hidden text-ellipsis whitespace-nowrap">
-                    <div className="font-medium">
-                      {project.name ?? "Untitled"}
-                    </div>
-                    <div className="text-xs text-[var(--slight-gray)]">
-                      <div className="">
-                        Date Created: {projectDate ?? "No Date Created"}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
+          <Suspense fallback={<ProjectCardsSkeleton />}>
+            <ProjectsCards />
+          </Suspense>
         </div>
       </div>
     </div>

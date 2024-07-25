@@ -1,6 +1,6 @@
 "use client"
 import { auth, db } from "@/config/firebase"
-import { doc, getDoc, setDoc } from "firebase/firestore"
+import { doc, getDoc, onSnapshot, setDoc } from "firebase/firestore"
 import { 
     GoogleAuthProvider, 
     signOut as firebaseSignOut,
@@ -36,11 +36,10 @@ const addUserToDB = async ({ name, email }: TAddUserToDB) => {
 }
 
 export const AuthContextProvider = ({children}: {children: React.ReactNode}) => {
-    const [user, setUser] = useState<any>(undefined)
-
     const router = useRouter()
     const { toast } = useToast()
 
+    const [user, setUser] = useState<any>(undefined)
 
     const signup = async (formdata: FormData) => {
         const email = formdata.get("email") as string
@@ -156,7 +155,6 @@ export const AuthContextProvider = ({children}: {children: React.ReactNode}) => 
         });
         return () => unsubscribe();
     }, [user])
-
 
     return (
         <AuthContext.Provider value={{user, signup, signin, googleSignin, signout}}>

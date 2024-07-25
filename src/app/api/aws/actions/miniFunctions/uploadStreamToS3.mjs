@@ -10,7 +10,7 @@ const s3Client = new S3Client({
   region: process.env.AWS_REGION,
 })
 
-const uploadStreamToS3 = async (stream, keyFilePath) => {
+export const uploadStreamToS3 = async (stream, keyFilePath) => {
   const uploadParams = {
     Bucket: process.env.AWS_S3_BUCKET_NAME,
     Key: keyFilePath,
@@ -37,4 +37,3 @@ const uploadStreamToS3 = async (stream, keyFilePath) => {
     console.error(error)
   }
 }
-export default uploadStreamToS3

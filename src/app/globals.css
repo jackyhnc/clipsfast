@@ -14,6 +14,7 @@
     :root {
       --muted-gray: 	#e5e7eb;
       --slight-gray: rgb(120, 120, 120);
+      --light-gray: rgb(200, 200, 200);
 
       --bg-yellow-white: #fff9ed;
       --bg-white: #ffffff;
@@ -22,7 +23,7 @@
       --purple-black: #0C1844;
       --salmon-orange: #FF6969;
       
-
+      --skeleton-gray: rgb(188, 188, 188);
 
       /*
       --primary-accentcolor: #FF6969;

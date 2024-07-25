@@ -29,6 +29,7 @@ export default function RootLayout({children}: Readonly<{children: React.ReactNo
     <html lang="en">
       <head>
         <script src="https://kit.fontawesome.com/c7f29f3608.js" crossOrigin="anonymous"></script>
+        <meta name="viewport" content="width=device-width, initial-scale=1.0"></meta>
       </head>
       <body className={inter.className} >
         <Analytics />
