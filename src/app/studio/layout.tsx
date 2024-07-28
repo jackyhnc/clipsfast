@@ -187,7 +187,6 @@ export default function StudioLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const { user, signout } = UserAuth() as { user: any; signout: any };
   const router = useRouter();
   const [isUserValid, setIsUserValid] = useState(false);
 

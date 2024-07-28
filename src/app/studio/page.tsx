@@ -23,12 +23,10 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import ProjectCardsSkeleton from "./_components/ProjectCardsSkeleton";
 
 import { db } from "@/config/firebase";
 import {
   doc,
-  getDoc,
   onSnapshot,
   deleteDoc,
   updateDoc,
@@ -47,6 +45,7 @@ import ytdl from "ytdl-core";
 import { getYoutubeInfo } from "@/actions/getYoutubeInfo";
 
 import { TProject } from "./types";
+import { useProjectsContext } from "@/context/ProjectsContext";
 
 export default function StudioDashboard() {
   const { user } = UserAuth() as { user: any };
@@ -60,10 +59,13 @@ export default function StudioDashboard() {
     );
   }, [projects.length]);
   //updates projects state on db side changes
+  const [fetchingProjectsState, setFetchingProjectsState] = useState(true);
   useEffect(() => {
     const userDocRef = doc(db, "users", user.email);
-    const projectsRef = collection(db, "projects")
+    const projectsRef = collection(db, "projects");
+
     const unsubscribe = onSnapshot(userDocRef, async (snapshot) => {
+      setFetchingProjectsState(false);
       const projectIDs: Array<string> = snapshot.data()?.projectsIDs ?? [];
 
       if (!projectIDs.length) {
@@ -71,9 +73,14 @@ export default function StudioDashboard() {
         return;
       }
 
-      const fetchedProjectsQuery = query(projectsRef, where("projectID", "in", projectIDs))
-      const fetchedProjectsSnapshot = await getDocs(fetchedProjectsQuery)
-      const fetchedProjects: TProject[] = fetchedProjectsSnapshot.docs.map(doc => doc.data() as TProject)
+      const fetchedProjectsQuery = query(
+        projectsRef,
+        where("projectID", "in", projectIDs)
+      );
+      const fetchedProjectsSnapshot = await getDocs(fetchedProjectsQuery);
+      const fetchedProjects: TProject[] = fetchedProjectsSnapshot.docs.map(
+        (doc) => doc.data() as TProject
+      );
 
       const sanitizedFetchedProjects = fetchedProjects.filter(
         (project) => project !== undefined
@@ -89,7 +96,6 @@ export default function StudioDashboard() {
 
     try {
       await deleteDoc(projectRef);
-
       await updateDoc(userDocRef, {
         projectsIDs: arrayRemove(projectID),
       });
@@ -155,7 +161,7 @@ export default function StudioDashboard() {
           }
 
           if (!newProject.thumbnail) {
-            newProject.thumbnail = youtubeInfo.thumbnails[4].url;
+            newProject.thumbnail = youtubeInfo.thumbnails[3].url;
           }
         } catch (error) {
           throw error;
@@ -199,13 +205,17 @@ export default function StudioDashboard() {
       throw new Error(error);
     }
   };
-  
   function AddProjectsButton() {
     const [createProjectFormErrorMsg, setCreateProjectFormErrorMsg] =
       useState("");
 
+    const [createProjectButtonPressed, setCreateProjectButtonPressed] =
+      useState(false);
     const handleCreateProjectFormSubmit = async (e: any) => {
       e.preventDefault();
+      if (createProjectButtonPressed) {
+        return;
+      }
 
       const projectNameInput = e.currentTarget.elements
         .projectName as HTMLInputElement;
@@ -215,6 +225,7 @@ export default function StudioDashboard() {
       const mediaURL = mediaURLInput.value;
 
       try {
+        setCreateProjectButtonPressed(true);
         await createProject(projectName, mediaURL);
       } catch (error: any) {
         console.error(error);
@@ -259,13 +270,21 @@ export default function StudioDashboard() {
                 </div>
 
                 <div className="space-y-2 flex flex-col">
-                  <Button
-                    type="submit"
-                    name="submit"
-                    className="bg-[var(--salmon-orange)]"
-                  >
-                    Create Project
-                  </Button>
+                  {createProjectButtonPressed ? (
+                    <div className="flex flex-row items-center gap-2 justify-center w-full border-2 rounded-md 
+                    border-[var(--salmon-orange)] h-10 px-4 py-2">
+                      <span>Creating project...</span>
+                      <i className="fa-solid fa-spinner animate-spin"></i>
+                    </div>
+                  ) : (
+                    <Button
+                      type="submit"
+                      name="submit"
+                      className="bg-[var(--salmon-orange)]"
+                    >
+                      Create Project
+                    </Button>
+                  )}
                   <Label className="text-red-500">
                     {createProjectFormErrorMsg}
                   </Label>
@@ -277,99 +296,117 @@ export default function StudioDashboard() {
       </Dialog>
     );
   }
-  async function ProjectsCards() {
+  const selectProject = (projectID: string) => {
+    /*
+    const selectedProject = projects.find(project => project.projectID === projectID)
+    if (!selectedProject) {
+      throw new Error("Project not found.")
+    }
+    
+    setProject(selectedProject as TProject)
+    */
+    router.push(`/studio/project/${projectID}/clips`);
+  };
+  function ProjectsCards() {
     return (
-      <div
-      className="grid grid-cols-[repeat(auto-fit,218px)] gap-6 p-6 bg-[var(--bg-white)] 
-      border-2 rounded-lg"
-      >
-        {projects.length ? null : <div className="">No Projects</div> }
-        {projects.map((project) => {
-          const projectDateObject = new Date(project.dateCreated);
-          const projectDate = projectDateObject.toLocaleDateString("en-US", {
-            year: "numeric",
-            month: "short",
-            day: "2-digit",
-          });
+      <div className="bg-[var(--bg-white)] border-2 rounded-lg p-8 flex">
+        <div className="gap-x-7 gap-y-10 flex flex-wrap">
+          {fetchingProjectsState && (
+            <div className="text-[var(--slight-gray)] w-full self-center justify-self-center">
+              Loading your video projects...
+            </div>
+          )}
+          {!projects.length && !fetchingProjectsState && (
+            <div className="text-[var(--slight-gray)] justify-self-center">
+              No projects to display.
+            </div>
+          )}
+          {projects.map((project) => {
+            const projectDateObject = new Date(project.dateCreated);
+            const projectDate = projectDateObject.toLocaleDateString("en-US", {
+              year: "numeric",
+              month: "short",
+              day: "2-digit",
+            });
 
-          return (
-            <div className="relative group/card" key={project.projectID}>
-              <div
-                className="bg-[var(--bg-white)] w-fit p-2 rounded-md hover:shadow-xl hover:scale-[1.01] 
-                transition fade-in-5 border-2 relative cursor-pointer"
-                onClick={() =>
-                  router.push(`/studio/project/${project.projectID}/clips`)
-                }
-              >
-                <TooltipProvider delayDuration={200}>
-                  <Tooltip>
-                    <TooltipTrigger>
-                      <div>
-                        {project.thumbnail ? (
-                          <Image
-                            src={project.thumbnail}
-                            alt="project thumbnail"
-                            width={200}
-                            height={0}
-                            className="h-auto rounded-sm aspect-[16/9] object-cover cursor-pointer"
-                          />
-                        ) : (
-                          <div className="rounded-sm w-[200px] bg-[var(--light-gray)] aspect-[16/9] flex">
-                            <i className="fa-solid fa-video text-5xl m-auto text-[var(--bg-white)]" />
-                          </div>
-                        )}
-                      </div>
-                    </TooltipTrigger>
-                    <TooltipContent>{project.media.url}</TooltipContent>
-                  </Tooltip>
-                </TooltipProvider>
-                <div className="my-1 w-[200px] space-y-2">
-                  <div className="font-medium line-clamp-2 text-sm">
-                    {project.name ?? "Untitled"}
-                  </div>
-                  <div className="text-xs text-[var(--slight-gray)]">
-                    Date Created: {projectDate ?? "No Date Created"}
+            return (
+              <div className="relative group/card z-20" key={project.projectID}>
+                <div
+                  className="bg-[var(--bg-white)] w-fit p-2 rounded-md hover:shadow-xl hover:scale-[1.01] 
+                  transition fade-in-5 border-2 relative cursor-pointer"
+                  onClick={() => selectProject(project.projectID)}
+                >
+                  <TooltipProvider delayDuration={200}>
+                    <Tooltip>
+                      <TooltipTrigger>
+                        <div>
+                          {project.thumbnail ? (
+                            <Image
+                              src={project.thumbnail}
+                              alt="project thumbnail"
+                              width={200}
+                              height={0}
+                              className="h-auto rounded-sm aspect-[16/9] object-cover cursor-pointer"
+                            />
+                          ) : (
+                            <div className="rounded-sm w-[200px] bg-[var(--light-gray)] aspect-[16/9] flex">
+                              <i className="fa-solid fa-video text-5xl m-auto text-[var(--bg-white)]" />
+                            </div>
+                          )}
+                        </div>
+                      </TooltipTrigger>
+                      <TooltipContent>{project.media.url}</TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                  <div className="my-1 w-[200px] space-y-2">
+                    <div className="font-medium line-clamp-2 text-sm h-[40px]">
+                      {project.name ?? "Untitled"}
+                    </div>
+                    <div className="text-xs text-[var(--slight-gray)]">
+                      Date Created: {projectDate ?? "No Date Created"}
+                    </div>
                   </div>
                 </div>
-              </div>
-              <div className="absolute top-1 right-1">
-                <Dialog>
-                  <DialogTrigger className="">
-                    <div className="group-hover/card:opacity-100 opacity-0
-                    rounded-full hover:bg-[var(--light-gray)] bg-[var(--bg-white)] border-[1px] 
-                    flex transition fade-in p-1 z-10"
-                    >
-                      <Image
-                        src={"/assets/x.svg"}
-                        alt="x"
-                        width={20}
-                        height={20}
-                      />
-                    </div>
-                  </DialogTrigger>
-                  <DialogContent>
-                    <DialogHeader>
-                      <DialogTitle>Are you absolutely sure?</DialogTitle>
-                      <DialogDescription>
-                        This action cannot be undone. <br />
-                        Project ID: {project.projectID}
-                      </DialogDescription>
-                    </DialogHeader>
-                    <div className="flex w-full justify-center">
-                      <Button
-                        type="submit"
-                        variant="destructive"
-                        onClick={() => deleteProject(project.projectID)}
+                <div className="absolute top-1 right-1">
+                  <Dialog>
+                    <DialogTrigger className="">
+                      <div
+                        className="group-hover/card:opacity-100 opacity-0
+                      rounded-full hover:bg-[var(--light-gray)] bg-[var(--bg-white)] border-[1px] 
+                      flex transition fade-in p-1 z-10"
                       >
-                        Delete Project
-                      </Button>
-                    </div>
-                  </DialogContent>
-                </Dialog>
+                        <Image
+                          src={"/assets/x.svg"}
+                          alt="x"
+                          width={20}
+                          height={20}
+                        />
+                      </div>
+                    </DialogTrigger>
+                    <DialogContent>
+                      <DialogHeader>
+                        <DialogTitle>Are you absolutely sure?</DialogTitle>
+                        <DialogDescription>
+                          This action cannot be undone. <br />
+                          Project ID: {project.projectID}
+                        </DialogDescription>
+                      </DialogHeader>
+                      <div className="flex w-full justify-center">
+                        <Button
+                          type="submit"
+                          variant="destructive"
+                          onClick={() => deleteProject(project.projectID)}
+                        >
+                          Delete Project
+                        </Button>
+                      </div>
+                    </DialogContent>
+                  </Dialog>
+                </div>
               </div>
-            </div>
-          );
-        })}
+            );
+          })}
+        </div>
       </div>
     );
   }
@@ -384,9 +421,7 @@ export default function StudioDashboard() {
         </div>
 
         <div className="">
-          <Suspense fallback={<ProjectCardsSkeleton />}>
-            <ProjectsCards />
-          </Suspense>
+          <ProjectsCards />
         </div>
       </div>
     </div>

@@ -12,3 +12,5 @@ export async function processMediaIntoClips(mediaURL: string) {
   })
   
 }
+
+processMediaIntoClips("https://www.youtube.com/watch?v=dQw4w9WgXcQ")

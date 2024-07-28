@@ -6,7 +6,7 @@ import { TProject } from "../../types";
 import { doc, getDoc } from "firebase/firestore";
 import { db } from "@/config/firebase";
 
-import { ProjectsContextProvider, useProjectsContext } from "@/context/ProjectsContext";
+import { useProjectsContext } from "@/context/ProjectsContext";
 
 type TStudioProjectProps = {
   params: { id: string };
@@ -16,22 +16,28 @@ export default function StudioProjectLayout({
   params,
   children,
 }: TStudioProjectProps) {
-  const { project, setProject } = useProjectsContext() as {
-    project: TProject;
-    setProject: React.Dispatch<React.SetStateAction<TProject>>;
+  const { setProject, setFetchingProjectState } = useProjectsContext() as {
+    setProject: React.Dispatch<React.SetStateAction<TProject>>,
+    setFetchingProjectState: React.Dispatch<React.SetStateAction<boolean>>,
   };
 
   useEffect(() => {
     const fetchProject = async () => {
       const projectDocRef = doc(db, "projects", params.id);
-      const projectDocSnap = await getDoc(projectDocRef);
-
-      if (projectDocSnap.exists()) {
-        setProject(projectDocSnap.data() as TProject);
-      } else {
-        console.log(`Project ${params.id} cannot be fetched.`);
-        throw new Error(`Project ${params.id} cannot be fetched.`);
+      try {
+        const projectDocSnap = await getDoc(projectDocRef);
+        
+        if (projectDocSnap.exists()) {
+          setProject(projectDocSnap.data() as TProject);
+        } else {
+          console.log(`Project ${params.id} cannot be fetched.`);
+          throw new Error(`Project ${params.id} cannot be fetched.`);
+        }
+        setFetchingProjectState(false)
+      } catch (error: any) {
+        throw new Error(error.message)
       }
+
     };
     fetchProject();
   }, [params.id]);

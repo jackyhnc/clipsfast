@@ -35,4 +35,6 @@ export type TClip = {
     start: number,
     end: number,
   }
+
+  url: "" //s3 link to generated clip
 }

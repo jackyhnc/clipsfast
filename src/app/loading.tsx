@@ -14,6 +14,36 @@ import {
 import { useEffect, useState } from "react";
 
 export default function Loading() {
+  const [showImage, setShowImage] = useState(false);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setShowImage(true);
+    }, 2000);
+    return () => clearTimeout(timer);
+  }, []);
+
+  return (
+    <div className="flex flex-col items-center justify-center gap-6 text-lg w-lvw h-lvh bg-[var(--bg-yellow-white)]">
+      <div className="font-medium">Loading...</div>
+      {showImage ? (
+        <Image
+          src={"https://media1.tenor.com/m/Lh66qN7XymwAAAAC/kumala-savesta.gif"}
+          alt="jake sigma loading gif"
+          width={150}
+          height={0}
+          className="rounded-lg"
+        />
+      ) :
+      (
+        <i className="fa-solid fa-spinner animate-spin text-5xl"></i>
+      )}
+    </div>
+  );
+}
+
+/*
+export default function Loading() {
   const [loadingState, setLoadingState] = useState(1);
   useEffect(() => {
     setTimeout(() => {
@@ -104,3 +134,4 @@ export default function Loading() {
     );
   }
 }
+*/

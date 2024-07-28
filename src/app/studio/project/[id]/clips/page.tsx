@@ -1,6 +1,6 @@
 "use client";
 
-import { TProject } from "@/app/studio/types";
+import { TClip, TProject } from "@/app/studio/types";
 import { Button } from "@/components/ui/button";
 import { db } from "@/config/firebase";
 import { useProjectsContext } from "@/context/ProjectsContext";
@@ -9,9 +9,14 @@ import Link from "next/link";
 import { useEffect } from "react";
 
 export default function StudioProjectClipsPage() {
-  const { project } = useProjectsContext() as {
-    project: TProject;
+  const { project, fetchingProjectState, clips } = useProjectsContext() as {
+    project: TProject,
+    fetchingProjectState: boolean,
+    clips: Array<TClip>,
   };
+  //media collection. when video processed into clips, it is displayed there as a doc with array of TClip types.
+  //users can regenerate those clisp for a video as every user can access that video's clips in the db
+  // asdfasd.com/mp4 : [TClip, TClip, { url: asdfasdfCLIP.mp4S3, name: ...}]
 
   useEffect(() => {
     const checkIfMediaIsProcessed = async () => {
@@ -35,6 +40,16 @@ export default function StudioProjectClipsPage() {
     // if yes, fetch clips
   },[])
 
+  if (fetchingProjectState) {
+    return (
+      <main className="flex flex-col items-center justify-center">
+        <div className="flex items-center gap-3 text-lg w-fit">
+          <div className="font-medium">Loading video information...</div>
+          <i className="fa-solid fa-spinner animate-spin"></i>
+        </div>
+      </main>
+    )
+  }
   const transcript = "adsf as df a sdfas df a sdfasdfasdf  asd f asdf asd fa sdfas df asd fas df as dfasd f asd asd f asdf asdf asdfasdfasdfasd  sfasdfa sd fasd f as df as"
   return (
     <main className="flex flex-col items-center justify-center">
@@ -55,12 +70,13 @@ export default function StudioProjectClipsPage() {
 
         <div className="grid gap-6 bg-[var(--bg-white)] rounded-lg
           grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 3xl:grid-cols-4 w-fit">
-          {Array.from({length:10}).map(() => {
+          {clips.map((clip) => {
             return (
               <div
                 className="bg-[var(--bg-white)] rounded-md
                 transition fade-in-5 border-2 relative max-w-[380px] min-w-[300px]
                 group/card space-y-8 px-5 py-8"
+                key={clip.title + clip.url}
               >
                 <div className="space-y-5 text-lg">
                   <div className="font-medium line-clamp-1 text-ellipsis text-sm">The Danger of Advanced AI Technology</div>
