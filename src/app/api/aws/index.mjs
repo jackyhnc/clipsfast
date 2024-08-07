@@ -20,7 +20,7 @@ export const handler = async (event) => {
             
 
             videoURL = YTDL.url
-            videoName = videoTitle
+            videoName = videoName
             //when url is youtube, videoURL for this api becomes the downloaded youtube video name (ex. watch=?id)
         }
 

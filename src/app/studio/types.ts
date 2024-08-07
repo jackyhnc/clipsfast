@@ -29,7 +29,6 @@ export type TProjectEditingConfigs = {
 
 export type TClip = {
   title: string,
-  transcript: string,
 
   time: {
     start: number,

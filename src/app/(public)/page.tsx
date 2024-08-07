@@ -14,7 +14,7 @@ function CallToActionButton({ children }: { children: React.ReactNode }) {
 }
 export default function Home() {
   return (
-    <div className="flex flex-col bg-[var(--bg-yellow-white)] text-[var(--purple-black)] font-medium">
+    <div className="flex flex-col bg-[var(--bg-white)] text-[var(--purple-black)] font-medium">
       <div className="w-lvw h-[800px]">
         <div className="grid grid-cols-2 items-center size-full px-10">
           <div className="mx-6 py-auto flex flex-col gap-14">
