@@ -37,3 +37,30 @@ export type TClip = {
 
   url: "" //s3 link to generated clip
 }
+
+export type TMedia = {
+  url: string,
+  type: "hosted" | "youtube",
+
+  clips: Array<TClip>,
+
+  percentAnalyzed: number,
+}
+
+export type TUser = {
+  email: string,
+  name: string,
+
+  projectsIDs: Array<string>,
+
+  userPlan: "free" | "lite" | "pro" | "max" | "enterprise",
+  minutesAnalyzed: number, 
+
+  //free 1 hr / small watermark
+  //$9.90 lite 15 hr,     creators
+  //$19.90 pro 35 hr,     clippers
+  //$70 max 150 hr,       agencies
+
+  //$100 enterprise idk
+
+}

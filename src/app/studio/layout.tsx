@@ -1,7 +1,7 @@
 "use client";
 
 import { onAuthStateChanged } from "firebase/auth";
-import { auth } from "@/config/firebase";
+import { auth, db } from "@/config/firebase";
 
 import { useRouter } from "next/navigation";
 
@@ -12,16 +12,38 @@ import { Button } from "@/components/ui/button";
 import { toast } from "@/components/ui/use-toast";
 import { ProjectsContextProvider } from "@/context/ProjectsContext";
 import Link from "next/link";
+import { doc, onSnapshot } from "firebase/firestore";
 
 const bigSidebarWidth = 220
 const smallSidebarWidth = 80
 
 function Sidebar(props: any) {
   const { minimizedSidebar, setMinimizedSidebar } = props;
-  const { signout } = UserAuth() as { user: any; signout: any };
+  const { user, signout } = UserAuth() as { user: any; signout: any };
+  
+  const [userPlan, setUserPlan] = useState(undefined);
+  const [minutesAnalyzed, setMinutesAnalyzed] = useState(undefined);
+
+  useEffect(() => {
+    const userDocRef = doc(db, "users", user.email);
+
+    const unsubscribe = onSnapshot(userDocRef, async (snapshot) => {
+      const userDoc = snapshot.data();
+
+      const userPlan = userDoc?.userPlan;
+      if (userPlan) {
+        setUserPlan(userPlan)
+      }
+
+      const minutesAnalyzed = userDoc?.minutesAnalyzed;
+      if (minutesAnalyzed) {
+        setMinutesAnalyzed(minutesAnalyzed)
+      }
+    });
+    return () => unsubscribe();
+  }, []);
 
   const router = useRouter();
-
   const handleSignoutClick = async () => {
     try {
       await signout();
@@ -68,6 +90,10 @@ function Sidebar(props: any) {
   }
 
   function BigSidebar() {
+    //fetch users plan and amount of videos left
+    
+    let usersPlan
+    let usersAmountOfVideoLeft
     return (
       <div
       className={`fixed left-0 top-0 px-4 bg-[var(--bg-yellow-white)] 
@@ -76,6 +102,10 @@ function Sidebar(props: any) {
       >
         <div className="flex flex-col gap-10 w-full">
           <div className="flex gap-8 items-center">
+            <div className="box-border p-2 cursor-pointer text-sm font-medium">
+              Tokens Left: / 100
+            </div>
+            {/*
             <Link href="/" className="box-border p-2 cursor-pointer">
               <Image
                 src={"/assets/logo.svg"}
@@ -87,6 +117,7 @@ function Sidebar(props: any) {
                 draggable={false}
               />
             </Link>
+            */}
             <SidebarTriggerButton />
           </div>
 
