@@ -1,14 +1,17 @@
 "use client";
 
+import { processMediaIntoClipsAndUserMinutesAnalyzedLogic } from "@/actions/processMedia/processMediaIntoClipsAndMinutesAnalyzedLogic";
 import { TClip, TProject } from "@/app/studio/types";
 import { Button } from "@/components/ui/button";
 import { db } from "@/config/firebase";
+import { UserAuth } from "@/context/AuthContext";
 import { useProjectsContext } from "@/context/ProjectsContext";
 import { doc, getDoc } from "firebase/firestore";
 import Link from "next/link";
 import { useEffect } from "react";
 
 export default function StudioProjectClipsPage() {
+  const { user } = UserAuth() as { user: any };
   const { project, fetchingProjectState, clips } = useProjectsContext() as {
     project: TProject,
     fetchingProjectState: boolean,
@@ -19,17 +22,14 @@ export default function StudioProjectClipsPage() {
   // asdfasd.com/mp4 : [TClip, TClip, { url: asdfasdfCLIP.mp4S3, name: ...}]
 
   useEffect(() => {
-    const checkIfMediaIsProcessed = async () => {
-      const docRef = doc(db, "media", project?.media.url);
-
-      const docSnap = await getDoc(docRef);
-
-      if (docSnap.exists()) {
-        return true
-      } else {
-        return false
-      }
+    const processMediaProps = {
+      userEmail: user.email,
+      mediaURL: "",
+      reanalyze: false
     }
+    processMediaIntoClipsAndUserMinutesAnalyzedLogic(processMediaProps) 
+
+    //still need to analyze media hr by hr, and make option to anaylyze more and all serverside logic w that
     const processMediaIntoClips = async () => {
       
     }

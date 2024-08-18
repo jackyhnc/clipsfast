@@ -25,7 +25,6 @@ export default function Loading() {
 
   return (
     <div className="flex flex-col items-center justify-center gap-6 text-lg w-lvw h-lvh bg-[var(--bg-yellow-white)]">
-      <div className="font-medium">Loading...</div>
       {showImage ? (
         <Image
           src={"https://media1.tenor.com/m/Lh66qN7XymwAAAAC/kumala-savesta.gif"}
@@ -34,10 +33,10 @@ export default function Loading() {
           height={0}
           className="rounded-lg"
         />
-      ) :
-      (
+      ) : (
         <i className="fa-solid fa-spinner animate-spin text-5xl"></i>
       )}
+      <div className="font-medium">Loading...</div>
     </div>
   );
 }

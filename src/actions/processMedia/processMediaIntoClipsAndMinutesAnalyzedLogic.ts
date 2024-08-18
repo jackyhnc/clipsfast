@@ -2,37 +2,31 @@
 
 import { TClip } from "@/app/studio/types";
 import { db } from "@/config/firebase";
-import { doc, getDoc, updateDoc } from "firebase/firestore";
+import { getUserMinutesAnalyzed } from "@/utils/getUserMinutesAnalyzed";
+import { doc, getDoc, increment, updateDoc } from "firebase/firestore";
+import { checkMediaProcessedPercentage } from "./checkMediaProcessedPercentage";
 
-export async function processMediaIntoClips(mediaURL: string, userEmail: string) {
+type TProps = {
+  mediaURL: string, 
+  userEmail: string, 
+  reanalyze?: boolean
+}
+export async function processMediaIntoClipsAndUserMinutesAnalyzedLogic(props: TProps) {
   //make more secure bc i dont want someone on client to trigger this server function with not their 
   //userEmail somehow and using someone else's account's minutes analyzed credits
 
+  const { mediaURL, userEmail, reanalyze = false } = props
+
+  const mediaPercentageAnalyzed: number = await checkMediaProcessedPercentage(mediaURL)
+  if (mediaPercentageAnalyzed === 1 && !reanalyze) {
+    throw new Error("Video already analyzed.")
+  }
   const userDocRef = doc(db, "users", userEmail);
   const userDoc = (await getDoc(userDocRef)).data();
   const userPlan = userDoc?.userPlan;
   const minutesAnalyzed = userDoc?.minutesAnalyzed;
-  let minutesProvided = 0;
 
-  switch (userPlan) {
-    case "free":
-      minutesProvided = 60;
-      break;
-    case "lite":
-      minutesProvided = 900;
-      break;
-    case "pro":
-      minutesProvided = 2100;
-      break;
-    case "max":
-      minutesProvided = 9000;
-      break;
-    /*
-    case "enterprise":
-      minutesProvided = 10000; //idk yet
-      break;
-    */
-  }
+  const minutesProvided = getUserMinutesAnalyzed(userPlan)
 
   if (minutesAnalyzed < minutesProvided) {
     return
@@ -58,6 +52,9 @@ export async function processMediaIntoClips(mediaURL: string, userEmail: string)
   }
   await updateDoc(doc(db, "users", userEmail), {
     minutesAnalyzed: newMinutesAnalyzed,
+  });
+  await updateDoc(doc(db, "users", userEmail), {
+    lifetimeMinutesAnalyzed: increment(minutesAnalyzedFromVideo),
   });
 
   return clips

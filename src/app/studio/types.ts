@@ -44,7 +44,7 @@ export type TMedia = {
 
   clips: Array<TClip>,
 
-  percentAnalyzed: number,
+  percentAnalyzed: number, // like 0.24
 }
 
 export type TUser = {
