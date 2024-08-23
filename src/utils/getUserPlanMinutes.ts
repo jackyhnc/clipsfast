@@ -1,6 +1,6 @@
 import { TUser } from "@/app/studio/types";
 
-export function getUserMinutesAnalyzed(userPlan: TUser["userPlan"]) {
+export function getUserPlanMinutes(userPlan: TUser["userPlan"]) {
   let minutesProvided = undefined
   switch (userPlan) {
     case "free":

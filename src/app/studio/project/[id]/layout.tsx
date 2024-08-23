@@ -3,10 +3,11 @@
 import { useEffect, useState } from "react";
 import { TProject } from "../../types";
 
-import { doc, getDoc } from "firebase/firestore";
+import { collection, doc, getDoc, onSnapshot } from "firebase/firestore";
 import { db } from "@/config/firebase";
 
 import { useProjectsContext } from "@/context/ProjectsContext";
+import { useRouter } from "next/navigation";
 
 type TStudioProjectProps = {
   params: { id: string };
@@ -16,31 +17,27 @@ export default function StudioProjectLayout({
   params,
   children,
 }: TStudioProjectProps) {
-  const { setProject, setFetchingProjectState } = useProjectsContext() as {
+  const { setProject, project, setFetchingProjectState } = useProjectsContext() as {
     setProject: React.Dispatch<React.SetStateAction<TProject>>,
     setFetchingProjectState: React.Dispatch<React.SetStateAction<boolean>>,
+    project: TProject,
   };
 
-  useEffect(() => {
-    const fetchProject = async () => {
-      const projectDocRef = doc(db, "projects", params.id);
-      try {
-        const projectDocSnap = await getDoc(projectDocRef);
-        
-        if (projectDocSnap.exists()) {
-          setProject(projectDocSnap.data() as TProject);
-        } else {
-          console.log(`Project ${params.id} cannot be fetched.`);
-          throw new Error(`Project ${params.id} cannot be fetched.`);
-        }
-        setFetchingProjectState(false)
-      } catch (error: any) {
-        throw new Error(error.message)
-      }
+  const router = useRouter()
 
-    };
-    fetchProject();
-  }, [params.id]);
+  useEffect(() => {
+    const projectDocRef = doc(db, "projects", params.id);
+    const unsubscribe = onSnapshot(projectDocRef, (projectDocSnap) => {
+      if (projectDocSnap.exists()) {
+        setProject(projectDocSnap.data() as TProject);
+      } else {
+        console.error(`Project ${params.id} cannot be fetched.`);
+        router.push("/studio");
+      }
+      setFetchingProjectState(false);
+    });
+    return () => unsubscribe();
+  }, [params.id, router, setFetchingProjectState, setProject]);
 
   /*
 

@@ -3,8 +3,7 @@
 import { useEffect, useState } from "react";
 
 import { onAuthStateChanged } from "firebase/auth";
-import { doc, onSnapshot } from "firebase/firestore";
-import { auth, db } from "@/config/firebase";
+import { auth } from "@/config/firebase";
 
 import { useRouter } from "next/navigation";
 
@@ -15,7 +14,7 @@ import { UserAuth } from "@/context/AuthContext";
 import { ProjectsContextProvider } from "@/context/ProjectsContext";
 
 import { Button } from "@/components/ui/button";
-import { toast } from "@/components/ui/use-toast";
+import { useToast } from "@/components/ui/use-toast";
 
 const bigSidebarWidth = 220;
 const smallSidebarWidth = 80;
@@ -173,6 +172,8 @@ function Sidebar(props: any) {
 
 export default function StudioLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
+  const { toast } = useToast();
+
   const [isUserValid, setIsUserValid] = useState(false);
 
   const [minimizedSidebar, setMinimizedSidebar] = useState(false);
@@ -195,17 +196,27 @@ export default function StudioLayout({ children }: { children: React.ReactNode }
     checkAuth();
   }, []);
 
-  if (isUserValid) {
-    return (
-      <>
-        <Sidebar minimizedSidebar={minimizedSidebar} setMinimizedSidebar={setMinimizedSidebar} />
-        <div
-          className="px-14 py-20"
-          style={{ marginLeft: `${minimizedSidebar ? smallSidebarWidth : bigSidebarWidth}px` }}
-        >
-          <ProjectsContextProvider>{children}</ProjectsContextProvider>
-        </div>
-      </>
-    );
+  try {
+    if (isUserValid) {
+      return (
+        <>
+          <Sidebar minimizedSidebar={minimizedSidebar} setMinimizedSidebar={setMinimizedSidebar} />
+          <div
+            className="px-14 py-20"
+            style={{ marginLeft: `${minimizedSidebar ? smallSidebarWidth : bigSidebarWidth}px` }}
+          >
+            <ProjectsContextProvider>{children}</ProjectsContextProvider>
+          </div>
+        </>
+      );
+    }
+    
+  } catch (error: any) {
+    toast({
+      title: error.message,
+      variant: "destructive",
+      duration: 2000
+    })
   }
+
 }

@@ -5,9 +5,10 @@ export type TProject = {
   dateCreatedTimestamp: number;
 
   media: {
-    url: string;
-    type: "hosted" | "youtube" | undefined;
+    url: string,
+    type: TMedia["type"],
   };
+
   name: string | undefined;
   thumbnail: string | undefined;
 };
@@ -29,6 +30,7 @@ export type TProjectEditingConfigs = {
 
 export type TClip = {
   title: string,
+  transcript: string | undefined,
 
   time: {
     start: number,
@@ -40,6 +42,10 @@ export type TClip = {
 
 export type TMedia = {
   url: string,
+
+  directURL?: string, //only important for yt videos where u need yt url and its direct downloadable url
+  durationInMinutes?: number,
+
   type: "hosted" | "youtube",
 
   clips: Array<TClip>,
@@ -54,7 +60,8 @@ export type TUser = {
   projectsIDs: Array<string>,
 
   userPlan: "free" | "lite" | "pro" | "max" | "enterprise",
-  minutesAnalyzed: number, 
+  minutesAnalyzedThisMonth: number, 
+  lifetimeMinutesAnalyzed: number,
 
   //free 1 hr / small watermark
   //$9.90 lite 15 hr,     creators
