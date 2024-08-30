@@ -4,12 +4,12 @@ import { TProject } from "@/app/studio/types";
 import { v4 as uuidv4 } from "uuid";
 import ytdl from "ytdl-core";
 import { getYoutubeInfo } from "./getYoutubeInfo";
-import { isYoutubeVideoURL } from "@/utils/isYoutubeVideoURL";
 import { db } from "@/config/firebase";
 import { arrayUnion, doc, getDoc, setDoc, updateDoc } from "firebase/firestore";
 import { deleteProject } from "./deleteProject";
 import { addMedia } from "./addMedia";
 import { sanitizeMediaURL } from "@/utils/sanitizeMediaURL";
+import { isYoutubeVideoURLValid } from "./isYoutubeVideoURLValid";
 
 export async function addProject(props: { projectName: string; mediaURL: string; userEmail: string }) {
   const { projectName, mediaURL, userEmail } = props;
@@ -22,7 +22,7 @@ export async function addProject(props: { projectName: string; mediaURL: string;
   let newProjectThumbnail: TProject["thumbnail"] = undefined;
 
   try {
-    const mediaDocRef = doc(db, "media", sanitizeMediaURL(mediaURL));
+    const mediaDocRef = doc(db, "media", await sanitizeMediaURL(mediaURL));
     const mediaDoc = await getDoc(mediaDocRef);
     if (!(mediaDoc.exists())) {
       await addMedia(mediaURL);
@@ -50,8 +50,7 @@ export async function addProject(props: { projectName: string; mediaURL: string;
       }
     };
 
-    if (isYoutubeVideoURL(mediaURL)) {
-      await validateYoutubeURL(mediaURL);
+    if (await isYoutubeVideoURLValid(mediaURL)) {
       const { title, thumbnails } = await getYoutubeInfo(mediaURL);
 
       newProjectName = title;

@@ -1,6 +1,5 @@
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
-import Image from "next/image";
 import "./globals.css";
 
 import { NextSSRPlugin } from "@uploadthing/react/next-ssr-plugin";
@@ -27,7 +26,7 @@ export default function RootLayout({children}: Readonly<{children: React.ReactNo
   return (
     <html lang="en">
       <head>
-        <script src="https://kit.fontawesome.com/c7f29f3608.js" crossOrigin="anonymous"></script>
+        <script src="https://kit.fontawesome.com/c7f29f3608.js" crossOrigin="anonymous" async></script>
         <meta name="viewport" content="width=device-width, initial-scale=1.0"></meta>
       </head>
       <body className={inter.className} >

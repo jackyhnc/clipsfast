@@ -1,22 +1,25 @@
 import { initializeApp } from "firebase/app";
 import { getAuth } from "firebase/auth";
-import { getFirestore } from "firebase/firestore";
-
-// TODO: Replace the following with your app's Firebase project configuration
-// See: https://firebase.google.com/docs/web/learn-more#config-object
+import { getFirestore, initializeFirestore } from "firebase/firestore";
 
 const firebaseConfig = {
-  apiKey: "AIzaSyCF-FJaQAgpG11QybqRNa_IcujvsEEUVoE",
-  authDomain: "clipsfast-fedd3.firebaseapp.com",
-  projectId: "clipsfast-fedd3",
-  storageBucket: "clipsfast-fedd3.appspot.com",
-  messagingSenderId: "202399973457",
-  appId: "1:202399973457:web:760c200b2797c5395fb870",
-  measurementId: "G-E6HJ43CXEG",
-  databaseURL: "https://clipsfast.firebaseio.com"
-}
-export const app = initializeApp(firebaseConfig)
+  apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
+  authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN,
+  projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
+  storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET,
+  messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID,
+  appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
+  measurementId: process.env.NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID,
+  databaseURL: process.env.NEXT_PUBLIC_FIREBASE_DATABASE_URL,
 
-export const auth = getAuth(app)
+  ignoreUndefinedProperties: true,
+};
 
-export const db = getFirestore(app)
+export const app = initializeApp(firebaseConfig);
+
+export const auth = getAuth(app);
+
+initializeFirestore(app, {
+  ignoreUndefinedProperties: true,
+});
+export const db = getFirestore(app);

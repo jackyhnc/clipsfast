@@ -2,23 +2,21 @@
 
 import { TClip, TMedia } from "@/app/studio/types";
 import { db } from "@/config/firebase";
-import { doc, getDoc, increment, updateDoc } from "firebase/firestore";
+import { doc, getDoc, increment, setDoc, updateDoc } from "firebase/firestore";
 import { getUserPlanMinutes } from "@/utils/getUserPlanMinutes";
 import { sanitizeMediaURL } from "@/utils/sanitizeMediaURL";
 import { getYoutubeInfo } from "../getYoutubeInfo";
 import Ffmpeg from "fluent-ffmpeg";
+import { processMediaIntoClips } from "./processMediaIntoClips";
 
-async function getVideoDuration(props: { mediaURL: string, videoType: TMedia["type"] }){
-  const { mediaURL, videoType } = props;
-
-  let durationInSeconds: number = 0
+async function getVideoDuration({ mediaURL, videoType }: { mediaURL: string; videoType: TMedia["type"] }) {
+  let durationInSeconds: number = 0;
 
   if (videoType === "youtube") {
-      const youtubeInfo = await getYoutubeInfo(mediaURL);
-      durationInSeconds = Number(youtubeInfo.durationInSeconds);
-
+    const youtubeInfo = await getYoutubeInfo(mediaURL);
+    durationInSeconds = Number(youtubeInfo.durationInSeconds);
   } else if (videoType === "hosted") {
-      durationInSeconds = await getHostedVideoDuration(mediaURL);
+    durationInSeconds = await getHostedVideoDuration(mediaURL);
   }
 
   return durationInSeconds;
@@ -43,10 +41,14 @@ async function getVideoDuration(props: { mediaURL: string, videoType: TMedia["ty
   }
 }
 
-function calculatePercentToBeAnalyzed(props: {durationInSeconds: number, percentAlreadyAnalyzed: number}) {
-  const { percentAlreadyAnalyzed, durationInSeconds } = props;
-
-  const durationInMinutes = durationInSeconds / 60
+function calculatePercentToBeAnalyzed({
+  percentAlreadyAnalyzed,
+  durationInSeconds,
+}: {
+  durationInSeconds: number;
+  percentAlreadyAnalyzed: number;
+}) {
+  const durationInMinutes = durationInSeconds / 60;
 
   const minutesAlreadyAnalyzed = percentAlreadyAnalyzed * durationInMinutes;
 
@@ -69,17 +71,29 @@ function calculatePercentToBeAnalyzed(props: {durationInSeconds: number, percent
 
   return {
     percentToBeAnalyzed: minutesToAnalyze / durationInMinutes,
-    minutesToAnalyze
-  } 
+    minutesToAnalyze,
+  };
 }
 
-export async function processMediaIntoClipsAndUserMinutesAnalyzedLogic(
-  { mediaURL, userEmail, reanalyze = false }: {
-    mediaURL: string;
-    userEmail: string;
-    reanalyze?: boolean;
+export async function processMediaIntoClipsAndUserMinutesAnalyzedLogic({
+  mediaURL,
+  userEmail,
+  reanalyze = false,
+  editConfig: {
+    clipsLengthInSeconds,
+    clipsContentPrompt,
+    clipsTitlePrompt,
   }
-) {
+}: {
+  mediaURL: string;
+  userEmail: string;
+  reanalyze?: boolean;
+  editConfig: {
+    clipsLengthInSeconds?: number;
+    clipsContentPrompt?: string;
+    clipsTitlePrompt?: string;
+  }
+}) {
   //make more secure bc i dont want someone on client to trigger this server function with not their
   //userEmail somehow and using someone else's account's minutes analyzed credits
 
@@ -87,9 +101,9 @@ export async function processMediaIntoClipsAndUserMinutesAnalyzedLogic(
   const userDoc = (await getDoc(userDocRef)).data();
   const userPlan = userDoc?.userPlan;
   const minutesUserAlreadyAnalyzed = userDoc?.minutesAnalyzed;
-  
-  const mediaDocRef = doc(db, "media", sanitizeMediaURL(mediaURL));
-  let mediaDoc = (await getDoc(mediaDocRef)).data() as TMedia
+
+  const mediaDocRef = doc(db, "media", await sanitizeMediaURL(mediaURL));
+  let mediaDoc = (await getDoc(mediaDocRef)).data() as TMedia;
 
   // check if user has enough minutes to analyze video
   const minutesProvidedForPlan = getUserPlanMinutes(userPlan);
@@ -99,45 +113,40 @@ export async function processMediaIntoClipsAndUserMinutesAnalyzedLogic(
   }
 
   // check if video should be reanalyzed
-  const mediaPercentageAnalyzed: number = mediaDoc?.percentAnalyzed
+  const mediaPercentageAnalyzed: number = mediaDoc?.percentAnalyzed;
 
   if (reanalyze) {
-    mediaDoc.percentAnalyzed = 0
-    await updateDoc(mediaDocRef, mediaDoc)
+    mediaDoc.percentAnalyzed = 0;
+    await updateDoc(mediaDocRef, mediaDoc);
   } else {
     if (mediaPercentageAnalyzed === 1) {
       throw new Error("Video already analyzed to 100% and reanalyze option not chosen.");
     }
   }
-  
+
   // calculate percent to be analyzed
   const { minutesToAnalyze, percentToBeAnalyzed } = calculatePercentToBeAnalyzed({
     percentAlreadyAnalyzed: mediaDoc?.percentAnalyzed,
     durationInSeconds: await getVideoDuration({ mediaURL, videoType: mediaDoc?.type }),
   });
-  mediaDoc.percentAnalyzed = percentToBeAnalyzed
-  await updateDoc(mediaDocRef, mediaDoc)
 
   // process video into clips
-  const awsResponse = await fetch("https://mkpogdgywg.execute-api.us-east-1.amazonaws.com/prod", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
+  const { clips, directURL } = await processMediaIntoClips({
+    mediaURL,
+    editConfig: {
+      clipsLengthInSeconds,
+      clipsContentPrompt,
+      clipsTitlePrompt,
     },
-    body: JSON.stringify({
-      video_url: mediaURL,
-      edit_config: {
-        clips_length_range_seconds: [],
-        clips_content_prompt: "",
-        clips_title_prompt: "",
-      },
-      minutes_to_analyze: minutesToAnalyze,
-    }),
-    // properties named with undercase bc lambda function is python
+    minutesToAnalyze,
   });
-  ////////////front end works with the clips page i thnk fix lambda's input output and itll be gucci /////
-  const clips: Array<TClip> = await awsResponse.json();
-  console.log(clips, "clips");
+////////////////////////////////////////////////////////////////////// saving directurl might be useless bc it expires
+/////////////////////////////////////////////////////////////////chekc if it expires
+  mediaDoc.percentAnalyzed = percentToBeAnalyzed;
+  mediaDoc.directURL = directURL; 
+  mediaDoc.clips = clips;
+  console.log(mediaDoc)
+  await updateDoc(mediaDocRef, mediaDoc);
 
   // update user minutes analyzed this month & lifetime minutes analyzed
   const minutesAnalyzedFromVideo = minutesToAnalyze;
@@ -148,7 +157,7 @@ export async function processMediaIntoClipsAndUserMinutesAnalyzedLogic(
   }
 
   await updateDoc(doc(db, "users", userEmail), {
-    minutesAnalyzed: newMinutesUserAlreadyAnalyzed,
+    minutesAnalyzedThisMonth: newMinutesUserAlreadyAnalyzed,
   });
   await updateDoc(doc(db, "users", userEmail), {
     lifetimeMinutesAnalyzed: increment(minutesAnalyzedFromVideo),

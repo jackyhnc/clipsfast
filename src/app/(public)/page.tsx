@@ -35,7 +35,7 @@ export default function Home() {
 
             <div className="">
               <div className="flex flex-col gap-2 text-[#0C1844]">
-                <CallToActionButton>Try it now. It's free!</CallToActionButton>
+                <CallToActionButton>Try it now. It&apos;s free!</CallToActionButton>
               </div>
             </div>
           </div>
@@ -67,13 +67,13 @@ export default function Home() {
           <div className="space-y-10 px-10">
             <div className="space-y-6">
               <div className="font-extrabold text-5xl">
-                We <span className="text-[var(--salmon-orange)]">don't</span>{" "}
+                We <span className="text-[var(--salmon-orange)]">don&apos;t</span>{" "}
                 inflate our prices!
               </div>
               <div className="text-lg">
-                Pay for what you use. Don't let pricey services f*ck you over!
+                Pay for what you use. Don&apos;t let pricey services f*ck you over!
                 Most services charge way too much for their AI integrated
-                services, when they don't need to.
+                services, when they don&apos;t need to.
               </div>
             </div>
             <CallToActionButton>Just join bro.</CallToActionButton>

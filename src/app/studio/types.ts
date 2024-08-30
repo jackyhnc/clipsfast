@@ -37,7 +37,7 @@ export type TClip = {
     end: number,
   }
 
-  url: "" //s3 link to generated clip
+  url: string | undefined //s3 link to generated clip
 }
 
 export type TMedia = {

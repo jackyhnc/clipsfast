@@ -59,7 +59,7 @@ export default function StudioDashboard() {
       setProjects(sanitizedFetchedProjects);
     });
     return () => unsubscribe();
-  }, []);
+  }, [user.email]);
 
   function AddProjectsButton() {
     const [createProjectFormErrorMsg, setCreateProjectFormErrorMsg] = useState("");
@@ -141,18 +141,19 @@ export default function StudioDashboard() {
       </Dialog>
     );
   }
-  const selectProject = (projectID: string) => {
-    /*
-    const selectedProject = projects.find(project => project.projectID === projectID)
-    if (!selectedProject) {
-      throw new Error("Project not found.")
-    }
-    
-    setProject(selectedProject as TProject)
-    */
-    router.push(`/studio/project/${projectID}/clips`);
-  };
   function ProjectsCards() {
+    const selectProject = (projectID: string) => {
+      /*
+      const selectedProject = projects.find(project => project.projectID === projectID)
+      if (!selectedProject) {
+        throw new Error("Project not found.")
+      }
+      
+      setProject(selectedProject as TProject)
+      */
+      router.push(`/studio/project/${projectID}/clips`);
+    };
+
     return (
       <div className="bg-[var(--bg-white)] border-2 rounded-lg p-8 flex">
         <div className="gap-x-7 gap-y-10 flex flex-wrap">
@@ -179,7 +180,7 @@ export default function StudioDashboard() {
                   transition fade-in-5 border-2 relative cursor-pointer"
                   onClick={() => selectProject(project.projectID)}
                 >
-                  <TooltipProvider delayDuration={200}>
+                  <TooltipProvider delayDuration={500}>
                     <Tooltip>
                       <TooltipTrigger>
                         <div>
@@ -215,10 +216,10 @@ export default function StudioDashboard() {
                     <DialogTrigger className="">
                       <div
                         className="group-hover/card:opacity-100 opacity-0
-                      rounded-full hover:bg-[var(--light-gray)] bg-[var(--bg-white)] border-[1px] 
+                      rounded-full hover:bg-[var(--muted-gray)] bg-[var(--bg-white)] border-2 
                       flex transition fade-in p-1 z-10"
                       >
-                        <Image src={"/assets/x.svg"} alt="x" width={20} height={20} />
+                        <Image src={"/assets/x.svg"} alt="delete project" width={20} height={20} />
                       </div>
                     </DialogTrigger>
                     <DialogContent>

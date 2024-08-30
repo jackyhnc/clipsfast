@@ -6,7 +6,7 @@ export default function WaitlistLayout({children}: {children: React.ReactNode}) 
       <nav className="flex justify-left h-16 items-center px-12 bg-[#FFF5E1] z-50">
         <div className="">
           <Image
-            src={"assets/waitlist/logo.svg"}
+            src={"assets/logo.svg"}
             alt="logo"
             width="0"
             height="0"

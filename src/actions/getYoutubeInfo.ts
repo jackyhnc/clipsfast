@@ -1,3 +1,5 @@
+"use server"
+
 import ytdl from "@distube/ytdl-core";
 
 export async function getYoutubeInfo(url: string) {
@@ -10,6 +12,7 @@ export async function getYoutubeInfo(url: string) {
       description: youtubeInfo.videoDetails.description,
       durationInSeconds: youtubeInfo.videoDetails.lengthSeconds,
       formats: youtubeInfo.formats,
+      info: youtubeInfo
     }
   } catch (error: any) {
     throw new Error(error.message + ": Failed to retrieve YouTube video's information.");

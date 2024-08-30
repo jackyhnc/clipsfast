@@ -17,7 +17,7 @@ import Link from "next/link"
 import { UserAuth } from "@/context/AuthContext"
 
 export default function SigninCard() {
-    const { signin, googleSignin } = UserAuth()
+    const { signin, googleSignin } = UserAuth() as any
 
     const handleFormSubmit = async (e: any) => {
         e.preventDefault()
@@ -83,10 +83,11 @@ export default function SigninCard() {
                         onClick={() => googleSignin()}
                     >
                         <div className="flex gap-3">
-                            <img 
-                                src="https://upload.wikimedia.org/wikipedia/commons/thumb/c/c1/Google_%22G%22_logo.svg/1920px-Google_%22G%22_logo.svg.png?20230822192911" 
+                            <Image 
+                                src="/assets/auth/google-logo.png" 
                                 alt="Google Logo" 
-                                className="size-5"
+                                width={20}
+                                height={20} 
                             />
                             <div className="">Google</div>
                         </div>
@@ -97,7 +98,7 @@ export default function SigninCard() {
                     className="relative flex justify-center text-sm text-muted-foreground hover:underline m-auto mt-6"
                     href="/signup"
                 >
-                    Don't have an account? Register one here.
+                    Don&apos;t have an account? Register one here.
                 </Link>
             </CardContent>
         </div>

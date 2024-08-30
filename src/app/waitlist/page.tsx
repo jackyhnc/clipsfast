@@ -4,7 +4,7 @@ import { WaitlistForm } from "@/components/WaitlistForm";
 
 export default function WaitlistPage() {
 
-  if (typeof window && window.innerWidth < 950) {
+  if (false) {
     return (
       <main className="">
         <div className="grid grid-cols-2 m-10 items-center">

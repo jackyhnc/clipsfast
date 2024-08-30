@@ -22,7 +22,7 @@ export function ProjectsContextProvider({ children }: { children: React.ReactNod
     setFetchingMediaState(true);
     if (project) {
       const fetchMedia = async () => {
-        const mediaRef = doc(db, `media/${sanitizeMediaURL(project.media.url)}`);
+        const mediaRef = doc(db, `media/${await sanitizeMediaURL(project.media.url)}`);
         const unsubscribe = onSnapshot(mediaRef, (mediaDocSnap) => {
           if (mediaDocSnap.exists()) {
             const fetchedMedia = mediaDocSnap.data() as TMedia;
@@ -36,7 +36,7 @@ export function ProjectsContextProvider({ children }: { children: React.ReactNod
       };
       fetchMedia();
     }
-  }, [project?.projectID]);
+  }, [project]);
 
   return (
     <ProjectsContext.Provider

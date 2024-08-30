@@ -15,7 +15,7 @@ import { UserAuth } from "@/context/AuthContext"
 
 
 export default function SignupCard() {
-    const { signup, googleSignin } = UserAuth()
+    const { signup, googleSignin } = UserAuth() as any
 
     const handleFormSubmit = async (e: any) => {
         e.preventDefault()
@@ -81,10 +81,11 @@ export default function SignupCard() {
                         onClick={() => googleSignin()}
                     >
                         <div className="flex gap-3">
-                            <img 
-                                src="assets/auth/google-logo.png" 
+                            <Image 
+                                src="/assets/auth/google-logo.png" 
                                 alt="Google Logo" 
-                                className="size-5"
+                                width={20}
+                                height={20}
                             />
                             <div className="">Google</div>
                         </div>

@@ -1,5 +1,6 @@
 "use client";
 
+import { processMediaIntoClips } from "@/actions/processMedia/processMediaIntoClips";
 import { processMediaIntoClipsAndUserMinutesAnalyzedLogic } from "@/actions/processMedia/processMediaIntoClipsAndMinutesAnalyzedLogic";
 import { TClip, TMedia, TProject } from "@/app/studio/types";
 import { Button } from "@/components/ui/button";
@@ -42,11 +43,12 @@ export default function StudioProjectClipsPage() {
     );
   }
 
-  const handleGenerateClips = ({ reanalyze }: { reanalyze: boolean }) => {
+  const handleGenerateClips = async ({ reanalyze }: { reanalyze: boolean }) => {
     const props = {
       mediaURL: media.url,
       userEmail: user.email,
       reanalyze,
+      editConfig: {},
     };
     processMediaIntoClipsAndUserMinutesAnalyzedLogic(props);
   };
@@ -88,7 +90,7 @@ export default function StudioProjectClipsPage() {
             >
               <div className="space-y-5 text-lg">
                 <div className="font-medium line-clamp-1 text-ellipsis text-sm">
-                  The Danger of Advanced AI Technology
+                  {clip.title}
                 </div>
                 <div className="w-full line-clamp-2 text-ellipsis">{clip.transcript ?? ""}</div>
               </div>
@@ -96,8 +98,8 @@ export default function StudioProjectClipsPage() {
                 <div className="flex gap-2 items-center text-xs">
                   <i className="fa-regular fa-clock"></i>
                   <div className="divide-x divide-[var(--slight-gray)] flex items-center">
-                    <div className="pr-2">30 seconds</div>
-                    <div className="pl-2">0:30 - 1:00</div>
+                    <div className="pr-2">{clip.time.end - clip.time.start}</div>
+                    <div className="pl-2">{`${clip.time.start} -> ${clip.time.end}`}</div>
                   </div>
                 </div>
                 <Button

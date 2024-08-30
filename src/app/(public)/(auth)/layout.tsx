@@ -9,7 +9,7 @@ import { useEffect } from "react";
 
 
 export default function AuthPagesLayout({children}: {children: React.ReactNode}) {
-    const { user } = UserAuth()
+    const { user } = UserAuth() as { user: any };
     const router = useRouter()
 
     useEffect(() => {
@@ -21,7 +21,7 @@ export default function AuthPagesLayout({children}: {children: React.ReactNode})
             });
         };
         checkAuth();
-    }, []);
+    }, [router]);
 
     return (
         <div className="w-full h-screen bg-blue bg-[var(--bg-yellow-white)]">

@@ -2,7 +2,7 @@
 
 import { db } from "@/config/firebase";
 import { UserAuth } from "@/context/AuthContext";
-import { getUserMinutesAnalyzed } from "@/utils/getUserMinutesAnalyzed";
+import { getUserPlanMinutes } from "@/utils/getUserPlanMinutes";
 import { doc, onSnapshot } from "firebase/firestore";
 import { useEffect, useState } from "react";
 
@@ -28,11 +28,11 @@ export default function UsagePage() {
       }
     });
     return () => unsubscribe();
-  }, []);
+  }, [user.email]);
 
   let minutesProvided;
   if (userPlan) {
-    minutesProvided = getUserMinutesAnalyzed(userPlan);
+    minutesProvided = getUserPlanMinutes(userPlan);
   }
 
   return (

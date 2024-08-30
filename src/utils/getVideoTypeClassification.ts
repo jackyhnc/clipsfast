@@ -1,7 +1,7 @@
 import { TMedia } from "@/app/studio/types";
-import { isYoutubeVideoURL } from "./isYoutubeVideoURL";
+import { isYoutubeVideoURLFormat } from "../actions/isYoutubeVideoURLValid";
 
-export function getVideoTypeClassification(mediaURL: string) {
-  const videoClass: TMedia["type"] = isYoutubeVideoURL(mediaURL) ? "youtube" : "hosted";
+export async function getVideoTypeClassification(mediaURL: string) {
+  const videoClass: TMedia["type"] = (await isYoutubeVideoURLFormat(mediaURL)) ? "youtube" : "hosted";
   return videoClass
 }
