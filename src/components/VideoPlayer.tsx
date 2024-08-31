@@ -4,37 +4,38 @@ import { MediaPlayer, MediaProvider } from '@vidstack/react';
 
 import '@vidstack/react/player/styles/base.css';
 
-interface VideoPlayerProps {
-  url: string;
-  aspectRatio?: string;
-  className?: string;
-  autoPlay?: boolean;
-  clipStartTime?: number;
-  controls?: boolean;
-  muted?: boolean;
-  loop?: boolean;
-}
-
 function VideoPlayer({
   url,
   aspectRatio = "auto",
   className = "",
   autoPlay = false,
   clipStartTime = 0,
+  clipEndTime = undefined,
   controls = true,
   muted = false,
   loop = false,
-}: VideoPlayerProps) {
+}: {
+  url: string;
+  aspectRatio?: string;
+  className?: string;
+  autoPlay?: boolean;
+  clipStartTime?: number;
+  clipEndTime?: number | undefined;
+  controls?: boolean;
+  muted?: boolean;
+  loop?: boolean;
+}) {
   return (
     <MediaPlayer
       src={url}
       controls={controls}
       aspectRatio={aspectRatio}
-      controlsDelay={30000}
+      controlsDelay={3000}
       hideControlsOnMouseLeave
       className={className}
       autoPlay={autoPlay}
       clipStartTime={clipStartTime}
+      clipEndTime={clipEndTime}
       muted={muted}
       loop={loop}
     >

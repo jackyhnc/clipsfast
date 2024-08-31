@@ -129,8 +129,8 @@ function Sidebar(props: any) {
   function SmallSidebar() {
     return (
       <div
-        className={`fixed left-0 top-0 px-4 bg-[var(--bg-yellow-white)] 
-      h-lvh flex flex-col gap-6 items-center py-10 justify-between`}
+        className="fixed left-0 top-0 px-4 bg-[var(--bg-yellow-white)] 
+      h-lvh flex flex-col gap-6 items-center py-10 justify-between"
         style={{ width: smallSidebarWidth }}
       >
         <div className="flex flex-col gap-10 w-full">
@@ -179,6 +179,10 @@ export default function StudioLayout({ children }: { children: React.ReactNode }
   const [minimizedSidebar, setMinimizedSidebar] = useState(false);
 
   useEffect(() => {
+    setMinimizedSidebar((typeof window && window.innerWidth) < 630 ? true : false);
+  },[]);
+
+  useEffect(() => {
     const checkAuth = () => {
       onAuthStateChanged(auth, (user) => {
         if (user) {
@@ -206,13 +210,11 @@ export default function StudioLayout({ children }: { children: React.ReactNode }
         </>
       );
     }
-    
   } catch (error: any) {
     toast({
       title: error.message,
       variant: "destructive",
-      duration: 2000
-    })
+      duration: 2000,
+    });
   }
-
 }

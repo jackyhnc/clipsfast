@@ -131,7 +131,7 @@ export async function processMediaIntoClipsAndUserMinutesAnalyzedLogic({
   });
 
   // process video into clips
-  const { clips, directURL } = await processMediaIntoClips({
+  const { clips } = await processMediaIntoClips({
     mediaURL,
     editConfig: {
       clipsLengthInSeconds,
@@ -140,10 +140,8 @@ export async function processMediaIntoClipsAndUserMinutesAnalyzedLogic({
     },
     minutesToAnalyze,
   });
-////////////////////////////////////////////////////////////////////// saving directurl might be useless bc it expires
-/////////////////////////////////////////////////////////////////chekc if it expires
+
   mediaDoc.percentAnalyzed = percentToBeAnalyzed;
-  mediaDoc.directURL = directURL; 
   mediaDoc.clips = clips;
   console.log(mediaDoc)
   await updateDoc(mediaDocRef, mediaDoc);
@@ -163,6 +161,5 @@ export async function processMediaIntoClipsAndUserMinutesAnalyzedLogic({
     lifetimeMinutesAnalyzed: increment(minutesAnalyzedFromVideo),
   });
 
-  console.log("%c clips processed", "color: blue");
   return clips;
 }

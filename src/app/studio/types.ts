@@ -37,13 +37,12 @@ export type TClip = {
     end: number,
   }
 
-  url: string | undefined //s3 link to generated clip
+  url: string //s3 link to generated clip, cannot be undefined bc firebase cant store undefined
 }
 
 export type TMedia = {
   url: string,
 
-  directURL?: string, //only important for yt videos where u need yt url and its direct downloadable url
   durationInMinutes?: number,
 
   type: "hosted" | "youtube",

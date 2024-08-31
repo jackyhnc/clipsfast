@@ -6,8 +6,21 @@ import { TClip, TMedia, TProject } from "@/app/studio/types";
 import { Button } from "@/components/ui/button";
 import { UserAuth } from "@/context/AuthContext";
 import { useProjectsContext } from "@/context/ProjectsContext";
+import { Loader2 } from "lucide-react";
 import Link from "next/link";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import VideoPlayer from "@/components/VideoPlayer";
 
 export default function StudioProjectClipsPage() {
   const { user } = UserAuth() as { user: any };
@@ -43,75 +56,151 @@ export default function StudioProjectClipsPage() {
     );
   }
 
-  const handleGenerateClips = async ({ reanalyze }: { reanalyze: boolean }) => {
-    const props = {
-      mediaURL: media.url,
-      userEmail: user.email,
-      reanalyze,
-      editConfig: {},
-    };
-    processMediaIntoClipsAndUserMinutesAnalyzedLogic(props);
-  };
   function GenerateClipsSection() {
+    const handleGenerateClips = async ({ reanalyze }: { reanalyze: boolean }) => {
+      setIsGeneratingClips(true);
+      const props = {
+        mediaURL: media.url,
+        userEmail: user.email,
+        reanalyze,
+        editConfig: {},
+      };
+      //await processMediaIntoClipsAndUserMinutesAnalyzedLogic(props);
+
+      await new Promise((resolve) => setTimeout(resolve, 2000));
+
+      setIsGeneratingClips(false);
+    };
+
     let reanalyze = false;
     if (media.percentAnalyzed === 1) {
       reanalyze = true;
     }
 
+    const [isGeneratingClips, setIsGeneratingClips] = useState(false);
+
     return (
-      <div className="flex items-center gap-3 text-lg w-fit">
+      <div
+        className="border-2 border-[var(--salmon-orange)] rounded-lg py-12 flex items-center 
+      justify-center flex-col space-y-4
+      bg-[var(--light-salmon-orange)]
+      "
+      >
         <div className="font-medium">
-          {reanalyze ? "Want to see fresh clips?" : `${media.percentAnalyzed}% analyzed`}
+          {reanalyze ? "Reanalyze to see fresh clips!" : `${media.percentAnalyzed}% analyzed`}
         </div>
         <Button
-          className="cursor-pointer bg-gradient-to-br from-[#ff9636] via-[var(--salmon-orange)] 
-  to-[#ff7936] text-lg"
+          className="bg-gradient-to-br from-[#ff9636] via-[var(--salmon-orange)] to-[#ff7936] 
+          text-lg hover:bg-black hover:from-black hover:via-black hover:to-black transition ease-in"
           onClick={() => handleGenerateClips({ reanalyze })}
+          disabled={isGeneratingClips}
         >
-          Analyze more
+          {isGeneratingClips ? (
+            <>
+              <i className="fa-solid fa-spinner animate-spin mr-2" />
+              <div className="">Generating clips... </div>
+            </>
+          ) : (
+            <div className="">Analyze More</div>
+          )}
         </Button>
       </div>
     );
   }
 
+  const exTranscript =
+    "hey guys today ill be showing you a glimpse into the mystical world of the amazon rainforest, where tribes form around the river bays, fruits sprawl across trees, and friendly and dangerous animals lurk around. hey guys today ill be showing you a glimpse into the mystical world of the amazon rainforest, where tribes form around the river bays, fruits sprawl across trees, and friendly and dangerous animals lurk around. hey guys today ill be showing you a glimpse into the mystical world of the amazon rainforest, where tribes form around the river bays, fruits sprawl across trees, and friendly and dangerous animals lurk around. ";
   function ClipsSection() {
     return (
       <div
-        className="grid gap-6 bg-[var(--bg-white)] rounded-lg
+        className="grid gap-10 bg-[var(--bg-white)] rounded-lg
       grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 3xl:grid-cols-4 w-fit"
       >
         {media.clips.map((clip) => {
+          function getFormatSecondsToTimestamp(seconds: number) {
+            const minute = Math.floor(seconds / 60)
+              .toString()
+              .padStart(2, "0");
+            const second = (seconds % 60).toString().padStart(2, "0");
+            return `${minute}:${second}`;
+          }
+
+          const startTimestamp = getFormatSecondsToTimestamp(clip.time.start);
+          const endTimestamp = getFormatSecondsToTimestamp(clip.time.end);
+
+          const duration = clip.time.end - clip.time.start;
           return (
             <div
-              className="bg-[var(--bg-white)] rounded-md
-                transition fade-in-5 border-2 relative max-w-[380px] min-w-[300px]
-                group/card space-y-8 px-5 py-8"
+              className="bg-[var(--bg-white)] rounded-lg
+                transition fade-in-5 border-2 relative lg:max-w-[380px] lg:min-w-[300px]
+                group/card px-6 hover:border-[var(--light-gray)] flex flex-col justify-between
+                w-full py-6 space-y-8"
               key={clip.title + clip.url}
             >
-              <div className="space-y-5 text-lg">
-                <div className="font-medium line-clamp-1 text-ellipsis text-sm">
+              <div className="space-y-4">
+                <div className="line-clamp-2 text-sm text-ellipsis text-[var(--slight-gray)]">
                   {clip.title}
                 </div>
-                <div className="w-full line-clamp-2 text-ellipsis">{clip.transcript ?? ""}</div>
+                <div className="w-full line-clamp-2 text-ellipsis text-2xl font-medium">
+                  {clip.transcript ?? exTranscript}
+                </div>
               </div>
               <div className="text-sm text-[var(--slight-gray)] flex gap-2 items-center justify-between">
-                <div className="flex gap-2 items-center text-xs">
+                <div className="flex gap-2 items-center text-sm">
                   <i className="fa-regular fa-clock"></i>
                   <div className="divide-x divide-[var(--slight-gray)] flex items-center">
-                    <div className="pr-2">{clip.time.end - clip.time.start}</div>
-                    <div className="pl-2">{`${clip.time.start} -> ${clip.time.end}`}</div>
+                    <div className="pr-2">{`${duration} seconds`}</div>
+                    <div className="pl-2 hidden sm:block">{`${startTimestamp} to ${endTimestamp}`}</div>
                   </div>
                 </div>
-                <Button
-                  variant={"outline"}
-                  className="transition ease-in bg-[var(--bg-white)] border-[var(--salmon-orange)]
-                    hover:bg-[var(--salmon-orange)] group/card-button leading-none"
-                >
-                  <i
-                    className="fa-solid fa-play text-xs text-[var(--salmon-orange)]
+
+                <Dialog>
+                  <DialogTrigger asChild>
+                    <Button
+                      variant={"outline"}
+                      size={"sm"}
+                      className="transition ease-in bg-[var(--bg-white)] border-[var(--salmon-orange)]
+                    hover:bg-[var(--salmon-orange)] group/card-button leading-none border-2"
+                    >
+                      <i
+                        className="fa-solid fa-play text-sm text-[var(--salmon-orange)]
                     group-hover/card-button:text-[var(--bg-white)] leading-none"
-                  ></i>
-                </Button>
+                      ></i>
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent className="sm:max-w-[600px] overflow-auto py-0">
+                    <div className="p-8">
+                      <div className="text-center text-xl font-medium pb-6">{clip.title}</div>
+
+                      <VideoPlayer
+                        url={media.url}
+                        className="rounded-lg w-full pb-2"
+                        clipStartTime={clip.time.start}
+                        clipEndTime={clip.time.end}
+                      />
+
+                      <div className="relative pb-2">
+                        <div
+                          className="bg-gradient-to-t from-[var(--bg-white)] via-[var(--bg-white] to-[rgba(255,255,255,0)] 
+                        absolute bottom-0 size-full h-8"
+                        ></div>
+                        <div className="max-h-[150px] overflow-y-auto">{clip.transcript ?? exTranscript}</div>
+                      </div>
+
+                      <div className="flex gap-2 items-center text-sm pb-6">
+                        <i className="fa-regular fa-clock"></i>
+                        <div className="divide-x divide-[var(--slight-gray)] flex items-center">
+                          <div className="pr-2">{`${duration} seconds`}</div>
+                          <div className="pl-2 hidden sm:block">{`${startTimestamp} to ${endTimestamp}`}</div>
+                        </div>
+                      </div>
+
+                      <div className="flex w-full justify-end">
+                        <Button className="bg-[var(--salmon-orange)] justify-end">Select Clip</Button>
+                      </div>
+                    </div>
+                  </DialogContent>
+                </Dialog>
               </div>
             </div>
           );
@@ -123,10 +212,10 @@ export default function StudioProjectClipsPage() {
   return (
     <main className="flex flex-col items-center justify-center">
       <div className="space-y-14">
-        <nav className="w-fit items-start space-y-2">
+        <nav className="w-fit items-start space-y-4">
           <div className="flex gap-3 text-3xl">
             <div className="font-semibold">
-              {`Shorts for ${project?.name}`}
+              {`Clips for "${project?.name}"`}
               <span className="ml-2">
                 <Link href={project?.media.url ?? ""}>
                   <i className="fa-solid fa-up-right-from-square text-[var(--salmon-orange)]"></i>
@@ -135,7 +224,7 @@ export default function StudioProjectClipsPage() {
             </div>
           </div>
           <div className="text-lg text-[var(--slight-gray)]">
-            Here are the highlighted clips of the video, pick your favorite one
+            Here are the highlighted clips of the video, pick your favorite ones ❤️
           </div>
         </nav>
 

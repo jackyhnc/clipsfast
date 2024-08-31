@@ -19,7 +19,4 @@ export const app = initializeApp(firebaseConfig);
 
 export const auth = getAuth(app);
 
-initializeFirestore(app, {
-  ignoreUndefinedProperties: true,
-});
 export const db = getFirestore(app);
