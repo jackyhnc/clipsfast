@@ -13,8 +13,8 @@
   @layer base {
     :root {
       --muted-gray: 	#e5e7eb;
-      --slight-gray: rgb(120, 120, 120);
       --light-gray: rgb(200, 200, 200);
+      --slight-gray: rgb(120, 120, 120);
 
       --bg-yellow-white: #fff9ed;
       --bg-white: #ffffff;

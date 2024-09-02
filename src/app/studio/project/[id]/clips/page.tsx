@@ -21,6 +21,9 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import VideoPlayer from "@/components/VideoPlayer";
+import { Progress } from "@/components/ui/progress";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Slider } from "@/components/ui/slider";
 
 export default function StudioProjectClipsPage() {
   const { user } = UserAuth() as { user: any };
@@ -57,18 +60,36 @@ export default function StudioProjectClipsPage() {
   }
 
   function GenerateClipsSection() {
-    const handleGenerateClips = async ({ reanalyze }: { reanalyze: boolean }) => {
+    const handleGenerateClips = async ({
+      reanalyze,
+      e,
+      editConfig
+    }: {
+      reanalyze: boolean;
+      e?: any;
+      editConfig?: {
+        clipsLengthInSeconds: number;
+        clipsContentPrompt: string;
+        clipsTitlePrompt: string;
+      }
+    }) => {
       setIsGeneratingClips(true);
       const props = {
         mediaURL: media.url,
         userEmail: user.email,
         reanalyze,
-        editConfig: {},
+        editConfig: editConfig ?? {},
       };
-      //await processMediaIntoClipsAndUserMinutesAnalyzedLogic(props);
-
-      await new Promise((resolve) => setTimeout(resolve, 2000));
-
+      
+      e?.preventDefault();
+      
+      try {
+        await processMediaIntoClipsAndUserMinutesAnalyzedLogic(props);
+        //await new Promise(resolve => setTimeout(resolve, 100000));
+      } catch (error) {
+        setIsGeneratingClips(false);
+        throw new Error("Something went wrong. Please try again.");
+      }
       setIsGeneratingClips(false);
     };
 
@@ -79,41 +100,147 @@ export default function StudioProjectClipsPage() {
 
     const [isGeneratingClips, setIsGeneratingClips] = useState(false);
 
+    const [generatingClipProgress, setGeneratingClipsProgress] = useState(0);
+    //add bs to progress bar
+    useEffect(() => {
+      if (isGeneratingClips) {
+        let howMuchProgressToAdd = Math.ceil(Math.random() * 4);
+        let intervalInMiliseconds = Math.round(Math.random() * 10000);
+
+        setTimeout(() => {
+          setGeneratingClipsProgress((prev) => prev + howMuchProgressToAdd);
+        }, intervalInMiliseconds);
+      }
+    }, [isGeneratingClips, generatingClipProgress, setGeneratingClipsProgress]);
+
+    const [buttonText, setButtonText] = useState("Analyze More");
+    //choose analyze button text
+    useEffect(() => {
+      if (isGeneratingClips) {
+        setButtonText("Please wait");
+      } else if (reanalyze) {
+        setButtonText("Reanalyze Video");
+      }
+    }, [isGeneratingClips, reanalyze]);
+
+    function GenerateClipsOptionsForm() {
+      const [clipsLengthInSeconds, setClipsLengthInSeconds] = useState(60);
+      const [clipsContentPrompt, setClipsContentPrompt] = useState("");
+      const [clipsTitlePrompt, setClipsTitlePrompt] = useState("");
+
+      return (
+        <form
+          className="space-y-6"
+          onSubmit={(e) =>
+            handleGenerateClips({
+              reanalyze,
+              e,
+              editConfig: {
+                clipsLengthInSeconds,
+                clipsContentPrompt,
+                clipsTitlePrompt,
+              },
+            })
+          }
+        >
+          <div className="space-y-2">
+            <Label>Prompt for clips' content</Label>
+            <Input
+              value={clipsContentPrompt}
+              onChange={(e) => setClipsContentPrompt(e.target.value)}
+              placeholder={"Must be informing, engaging, funny moments"}
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label>Prompt for clips' title</Label>
+            <Input
+              value={clipsTitlePrompt}
+              onChange={(e) => setClipsTitlePrompt(e.target.value)}
+              placeholder={"Must be interesting, eye-catching, suprising, emojis allowed"}
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label>Approximate length of clips</Label>
+            <Slider
+              value={[clipsLengthInSeconds]}
+              onValueChange={(value) => setClipsLengthInSeconds(value[0])}
+              max={100}
+              step={1}
+            />
+            <div className="text-sm text-[var(--slight-gray)]">{`${clipsLengthInSeconds} seconds`}</div>
+          </div>
+
+          <div className="w-full flex justify-end">
+            <Button
+              className="bg-[var(--salmon-orange)] text-sm sm:text-lg"
+              disabled={isGeneratingClips}
+              type="submit"
+            >
+              {buttonText}
+              {isGeneratingClips ? (
+                <i className="fa-solid fa-spinner animate-spin text-[var(--bg-white)] ml-2"></i>
+              ) : (
+                <i className="fa-solid fa-wand-magic-sparkles text-[var(--bg-white)] ml-2"></i>
+              )}
+            </Button>
+          </div>
+        </form>
+      );
+    }
+
     return (
       <div
         className="border-2 border-[var(--salmon-orange)] rounded-lg py-12 flex items-center 
       justify-center flex-col space-y-4
-      bg-[var(--light-salmon-orange)]
-      "
+      bg-[var(--light-salmon-orange)] text-center min-w-[250px] px-10"
       >
-        <div className="font-medium">
-          {reanalyze ? "Reanalyze to see fresh clips!" : `${media.percentAnalyzed}% analyzed`}
+        <div className="font-medium text-lg">
+          {isGeneratingClips ? "Generating clips..." : `${Math.ceil(media.percentAnalyzed * 100)}% analyzed. ${
+            reanalyze ? "Wanna see fresh new clips?" : ""
+          }`}
         </div>
-        <Button
-          className="bg-gradient-to-br from-[#ff9636] via-[var(--salmon-orange)] to-[#ff7936] 
-          text-lg hover:bg-black hover:from-black hover:via-black hover:to-black transition ease-in"
-          onClick={() => handleGenerateClips({ reanalyze })}
-          disabled={isGeneratingClips}
-        >
-          {isGeneratingClips ? (
-            <>
-              <i className="fa-solid fa-spinner animate-spin mr-2" />
-              <div className="">Generating clips... </div>
-            </>
-          ) : (
-            <div className="">Analyze More</div>
-          )}
-        </Button>
+        <div className="flex flex-col space-y-2">
+          <Button className="bg-[var(--salmon-orange)] text-sm sm:text-lg" disabled={isGeneratingClips} onClick={() => handleGenerateClips({ reanalyze })}>
+            {buttonText}
+            {isGeneratingClips ? (
+              <i className="fa-solid fa-spinner animate-spin text-[var(--bg-white)] ml-2"></i>
+            ) : (
+              <i className="fa-solid fa-wand-magic-sparkles text-[var(--bg-white)] ml-2"></i>
+            )}
+          </Button>
+          <Dialog>
+            <DialogTrigger>
+              <div className="text-sm text-[var(--slight-gray)] underline hover:text-black transition">
+                Advanced Options
+              </div>
+            </DialogTrigger>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Advanced options for generating clips</DialogTitle>
+              </DialogHeader>
+              <GenerateClipsOptionsForm />
+            </DialogContent>
+          </Dialog>
+        </div>
+
+        {isGeneratingClips && (
+          <>
+            <Progress value={generatingClipProgress} className="w-[60%]" />
+          </>
+        )}
+        <div className="text-xs sm:text-sm text-[var(--slight-gray)] flex items-center max-w-[350px]">
+          <div className="text-center">Processing in the background. You will be emailed when finished.</div>
+        </div>
       </div>
     );
   }
 
-  const exTranscript =
-    "hey guys today ill be showing you a glimpse into the mystical world of the amazon rainforest, where tribes form around the river bays, fruits sprawl across trees, and friendly and dangerous animals lurk around. hey guys today ill be showing you a glimpse into the mystical world of the amazon rainforest, where tribes form around the river bays, fruits sprawl across trees, and friendly and dangerous animals lurk around. hey guys today ill be showing you a glimpse into the mystical world of the amazon rainforest, where tribes form around the river bays, fruits sprawl across trees, and friendly and dangerous animals lurk around. ";
   function ClipsSection() {
     return (
       <div
-        className="grid gap-10 bg-[var(--bg-white)] rounded-lg
+        className="grid gap-x-8 gap-y-10 bg-[var(--bg-white)] rounded-lg
       grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 3xl:grid-cols-4 w-fit"
       >
         {media.clips.map((clip) => {
@@ -132,7 +259,7 @@ export default function StudioProjectClipsPage() {
           return (
             <div
               className="bg-[var(--bg-white)] rounded-lg
-                transition fade-in-5 border-2 relative lg:max-w-[380px] lg:min-w-[300px]
+                transition fade-in-5 border-2 relative min-w-[250px] lg:max-w-[380px] lg:min-w-[300px]
                 group/card px-6 hover:border-[var(--light-gray)] flex flex-col justify-between
                 w-full py-6 space-y-8"
               key={clip.title + clip.url}
@@ -142,10 +269,10 @@ export default function StudioProjectClipsPage() {
                   {clip.title}
                 </div>
                 <div className="w-full line-clamp-2 text-ellipsis text-2xl font-medium">
-                  {clip.transcript ?? exTranscript}
+                  {clip.transcript ?? ""}
                 </div>
               </div>
-              <div className="text-sm text-[var(--slight-gray)] flex gap-2 items-center justify-between">
+              <div className="text-sm text-[var(--slight-gray)] flex items-center justify-between">
                 <div className="flex gap-2 items-center text-sm">
                   <i className="fa-regular fa-clock"></i>
                   <div className="divide-x divide-[var(--slight-gray)] flex items-center">
@@ -172,31 +299,35 @@ export default function StudioProjectClipsPage() {
                     <div className="p-8">
                       <div className="text-center text-xl font-medium pb-6">{clip.title}</div>
 
-                      <VideoPlayer
-                        url={media.url}
-                        className="rounded-lg w-full pb-2"
-                        clipStartTime={clip.time.start}
-                        clipEndTime={clip.time.end}
-                      />
+                      <div className="space-y-4">
+                        <VideoPlayer
+                          url={media.url}
+                          className="rounded-lg w-[100px] pb-2"
+                          clipStartTime={clip.time.start}
+                          clipEndTime={clip.time.end}
+                          autoPlay={false}
+                        />
 
-                      <div className="relative pb-2">
-                        <div
-                          className="bg-gradient-to-t from-[var(--bg-white)] via-[var(--bg-white] to-[rgba(255,255,255,0)] 
-                        absolute bottom-0 size-full h-8"
-                        ></div>
-                        <div className="max-h-[150px] overflow-y-auto">{clip.transcript ?? exTranscript}</div>
-                      </div>
-
-                      <div className="flex gap-2 items-center text-sm pb-6">
-                        <i className="fa-regular fa-clock"></i>
-                        <div className="divide-x divide-[var(--slight-gray)] flex items-center">
-                          <div className="pr-2">{`${duration} seconds`}</div>
-                          <div className="pl-2 hidden sm:block">{`${startTimestamp} to ${endTimestamp}`}</div>
+                        <div className="relative w-full pb-2">
+                          <div
+                            className="bg-gradient-to-t from-[var(--bg-white)] via-[var(--bg-white)]
+                          absolute bottom-2 size-full h-10 z-10"
+                          ></div>
+                          <ScrollArea className="h-[200px] rounded-md border p-4 w-full z-9">
+                            {clip.transcript ?? ""}
+                          </ScrollArea>
                         </div>
-                      </div>
 
-                      <div className="flex w-full justify-end">
-                        <Button className="bg-[var(--salmon-orange)] justify-end">Select Clip</Button>
+                        <div className="flex w-full justify-between">
+                          <div className="flex gap-2 items-center text-sm text-[var(--slight-gray)]">
+                            <i className="fa-regular fa-clock"></i>
+                            <div className="divide-x divide-[var(--slight-gray)] flex items-center">
+                              <div className="pr-2">{`${duration} seconds`}</div>
+                              <div className="pl-2 hidden sm:block">{`${startTimestamp} to ${endTimestamp}`}</div>
+                            </div>
+                          </div>
+                          <Button className="bg-[var(--salmon-orange)] justify-end">Select Clip</Button>
+                        </div>
                       </div>
                     </div>
                   </DialogContent>

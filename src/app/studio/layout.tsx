@@ -72,8 +72,8 @@ function Sidebar(props: any) {
   function BigSidebar() {
     return (
       <div
-        className={`fixed left-0 top-0 px-4 bg-[var(--bg-yellow-white)] 
-      h-lvh flex flex-col gap-6 items-center py-10 justify-between`}
+        className="fixed left-0 top-0 px-4 bg-[var(--bg-yellow-white)] 
+      h-lvh flex flex-col gap-6 items-center py-10 justify-between z-50"
         style={{ width: bigSidebarWidth }}
       >
         <div className="flex flex-col gap-10 w-full">
@@ -202,8 +202,8 @@ export default function StudioLayout({ children }: { children: React.ReactNode }
         <>
           <Sidebar minimizedSidebar={minimizedSidebar} setMinimizedSidebar={setMinimizedSidebar} />
           <div
-            className="px-14 py-20"
-            style={{ marginLeft: `${minimizedSidebar ? smallSidebarWidth : bigSidebarWidth}px` }}
+            className="px-4 sm:px-14 py-20"
+            style={{ marginLeft: `${minimizedSidebar ? smallSidebarWidth : typeof window && window.innerWidth > 630 ? bigSidebarWidth : smallSidebarWidth}px` }}
           >
             <ProjectsContextProvider>{children}</ProjectsContextProvider>
           </div>

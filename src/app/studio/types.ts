@@ -52,6 +52,10 @@ export type TMedia = {
   percentAnalyzed: number, // like 0.24
 }
 
+export type TActionInProgress = {
+  mediaURLBeingAnalyzed: string,
+  startTime: number,
+}
 export type TUser = {
   email: string,
   name: string,
@@ -61,6 +65,8 @@ export type TUser = {
   userPlan: "free" | "lite" | "pro" | "max" | "enterprise",
   minutesAnalyzedThisMonth: number, 
   lifetimeMinutesAnalyzed: number,
+
+  actionsInProgress: TActionInProgress[]
 
   //free 1 hr / small watermark
   //$9.90 lite 15 hr,     creators

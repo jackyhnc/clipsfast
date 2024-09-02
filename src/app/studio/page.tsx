@@ -33,9 +33,7 @@ export default function StudioDashboard() {
   const router = useRouter();
 
   const [projects, setProjects] = useState<Array<TProject>>([]);
-  useEffect(() => {
-    setProjects((prev) => prev.sort((a, b) => b.dateCreatedTimestamp - a.dateCreatedTimestamp));
-  }, [projects.length]);
+
   //updates projects state on db side changes
   const [fetchingProjectsState, setFetchingProjectsState] = useState(true);
   useEffect(() => {
@@ -56,7 +54,8 @@ export default function StudioDashboard() {
       const fetchedProjects: TProject[] = fetchedProjectsSnapshot.docs.map((doc) => doc.data() as TProject);
 
       const sanitizedFetchedProjects = fetchedProjects.filter((project) => project !== undefined);
-      setProjects(sanitizedFetchedProjects);
+      const sortedFetchedProjects = sanitizedFetchedProjects.sort((a, b) => b.dateCreatedTimestamp - a.dateCreatedTimestamp);
+      setProjects(sortedFetchedProjects);
     });
     return () => unsubscribe();
   }, [user.email]);
@@ -112,7 +111,7 @@ export default function StudioDashboard() {
                   <Input name="projectName" id="projectName" placeholder="Untitled" />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="url">Input the video URL you want to use.</Label>
+                  <Label htmlFor="url">* Input the video URL you want to use.</Label>
                   <Input name="url" id="url" placeholder="URL" required />
                 </div>
 

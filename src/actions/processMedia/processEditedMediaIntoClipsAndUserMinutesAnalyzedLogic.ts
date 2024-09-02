@@ -9,6 +9,11 @@ import { getYoutubeInfo } from "../getYoutubeInfo";
 import Ffmpeg from "fluent-ffmpeg";
 import { processMediaIntoClips } from "./processMediaIntoClips";
 
+////////////////////////////////////////////
+//////////////////////  make it so processesing media with config options saves clips and their configs to user's history
+//////////////////////////////////////////// only user can view their own personalized clips, regular process media function
+////////////////////// saves to general media where everyone can see
+ 
 async function getVideoDuration({ mediaURL, videoType }: { mediaURL: string; videoType: TMedia["type"] }) {
   let durationInSeconds: number = 0;
 
@@ -55,9 +60,9 @@ function calculatePercentToBeAnalyzed({
   let minutesToAnalyze = 0;
 
   if (minutesAlreadyAnalyzed >= 60) {
-    minutesToAnalyze = 180;
+    minutesToAnalyze = 180
   } else {
-    minutesToAnalyze = 60;
+    minutesToAnalyze = 60
   }
 
   if (durationInMinutes > 600) {
@@ -74,11 +79,15 @@ function calculatePercentToBeAnalyzed({
   };
 }
 
-export async function processMediaIntoClipsAndUserMinutesAnalyzedLogic({
+export async function processEditedMediaIntoClipsAndUserMinutesAnalyzedLogic({
   mediaURL,
   userEmail,
   reanalyze = false,
-  editConfig: { clipsLengthInSeconds, clipsContentPrompt, clipsTitlePrompt },
+  editConfig: {
+    clipsLengthInSeconds,
+    clipsContentPrompt,
+    clipsTitlePrompt,
+  }
 }: {
   mediaURL: string;
   userEmail: string;
@@ -87,56 +96,41 @@ export async function processMediaIntoClipsAndUserMinutesAnalyzedLogic({
     clipsLengthInSeconds?: number;
     clipsContentPrompt?: string;
     clipsTitlePrompt?: string;
-  };
+  }
 }) {
   //make more secure bc i dont want someone on client to trigger this server function with not their
   //userEmail somehow and using someone else's account's minutes analyzed credits
 
   const userDocRef = doc(db, "users", userEmail);
-  const userDocSnapData = (await getDoc(userDocRef)).data();
-  const userDoc: TUser = {
-    email: userDocSnapData?.email,
-    name: userDocSnapData?.name,
-    projectsIDs: userDocSnapData?.projectsIDs,
-    userPlan: userDocSnapData?.userPlan,
-    minutesAnalyzedThisMonth: userDocSnapData?.minutesAnalyzedThisMonth,
-    lifetimeMinutesAnalyzed: userDocSnapData?.lifetimeMinutesAnalyzed,
-    actionsInProgress: userDocSnapData?.actionsInProgress ?? [],
-  };
+  const userDoc = (await getDoc(userDocRef)).data() as TUser;
   const userPlan = userDoc?.userPlan;
 
   const minutesUserAlreadyAnalyzed = userDoc.minutesAnalyzedThisMonth;
 
   //check if user already analyzing video or they're analyzing over 5 videos. if not, add to their actions in progress
-  const actionsInProgress = userDoc.actionsInProgress;
-  const videosAlreadyBeingAnalyzed = actionsInProgress.map((action) => action.mediaURLBeingAnalyzed);
+  const actionsInProgress = userDoc.actionsInProgress
+  const videosAlreadyBeingAnalyzed = actionsInProgress.map(action => action.mediaURLBeingAnalyzed)
   if (videosAlreadyBeingAnalyzed.includes(mediaURL)) {
-    throw new Error(`You are already analyzing this video: ${mediaURL}.`);
+    throw new Error(`You are already analyzing this video: ${mediaURL}.`)
   }
-  const maxAmountOfVideosUserCanAnalyze = 1;
+  const maxAmountOfVideosUserCanAnalyze = 0
   if (actionsInProgress.length >= maxAmountOfVideosUserCanAnalyze) {
-    throw new Error(
-      "You have maxed out at 5 videos processing at one time. Please wait for them to process."
-    );
+    throw new Error("You have maxed out at 5 videos processing at one time. Please wait for them to process.")
   }
 
   const newActionInProgress: TActionInProgress = {
     mediaURLBeingAnalyzed: mediaURL,
-    startTime: Date.now(),
-  };
+    startTime: Date.now()
+  }
   await updateDoc(userDocRef, {
-    actionsInProgress: arrayUnion(newActionInProgress),
+    ...userDoc,
+    actionsInProgress: arrayUnion(newActionInProgress)
   });
+  
+  //add mediaURLBeingAnalyzed to user's actionsInProgress
 
-  // add mediaURLBeingAnalyzed to user's actionsInProgress
   const mediaDocRef = doc(db, "media", await sanitizeMediaURL(mediaURL));
-  const mediaDocSnapData = (await getDoc(mediaDocRef)).data();
-  let mediaDoc: TMedia = {
-    url: mediaDocSnapData?.url,
-    type: mediaDocSnapData?.type,
-    clips: mediaDocSnapData?.clips,
-    percentAnalyzed: mediaDocSnapData?.percentAnalyzed,
-  };
+  let mediaDoc = (await getDoc(mediaDocRef)).data() as TMedia;
 
   // check if user has enough minutes to analyze video
   const minutesProvidedForPlan = getUserPlanMinutes(userPlan);
@@ -163,32 +157,21 @@ export async function processMediaIntoClipsAndUserMinutesAnalyzedLogic({
   });
 
   // process video into clips
-  let clips;
-  try {
-    clips = await processMediaIntoClips({
-      mediaURL,
-      editConfig: {
-        clipsLengthInSeconds,
-        clipsContentPrompt,
-        clipsTitlePrompt,
-      },
-      minutesToAnalyze,
-    });
-    if (!clips) {
-      throw new Error("Error processing video into clips.");
-    }
-  } catch (error: any) {
-    await updateDoc(userDocRef, {
-      actionsInProgress: arrayRemove(newActionInProgress),
-    });
-    throw new Error("Error processing video into clips: " + error.message);
-  }
+  const { clips } = await processMediaIntoClips({
+    mediaURL,
+    editConfig: {
+      clipsLengthInSeconds,
+      clipsContentPrompt,
+      clipsTitlePrompt,
+    },
+    minutesToAnalyze,
+  });
 
   // update media doc values
   mediaDoc.percentAnalyzed = percentToBeAnalyzed;
   mediaDoc.clips = clips;
-  console.log(mediaDoc);
-  await setDoc(mediaDocRef, mediaDoc);
+  console.log(mediaDoc)
+  await updateDoc(mediaDocRef, mediaDoc);
 
   // update user minutes analyzed this month & lifetime minutes analyzed & remove this action from user's actions in progress
   const minutesAnalyzedFromVideo = minutesToAnalyze;
@@ -199,12 +182,14 @@ export async function processMediaIntoClipsAndUserMinutesAnalyzedLogic({
   }
 
   await updateDoc(userDocRef, {
+    ...userDoc,
     minutesAnalyzedThisMonth: newMinutesUserAlreadyAnalyzed,
     lifetimeMinutesAnalyzed: increment(minutesAnalyzedFromVideo),
-    actionsInProgress: arrayRemove(newActionInProgress), //
+    actionsInProgress: arrayRemove(newActionInProgress) // 
   });
-
+  
   // email user analyzing is done
 
   return clips;
 }
+

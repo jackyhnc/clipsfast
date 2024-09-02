@@ -60,6 +60,7 @@ export const AuthContextProvider = ({ children }: { children: React.ReactNode })
           userPlan: "free",
           minutesAnalyzedThisMonth: 0,
           lifetimeMinutesAnalyzed: 0,
+          actionsInProgress: [],
         };
         addUserToDB(newUser);
       });
@@ -110,6 +111,7 @@ export const AuthContextProvider = ({ children }: { children: React.ReactNode })
           userPlan: "free",
           minutesAnalyzedThisMonth: 0,
           lifetimeMinutesAnalyzed: 0,
+          actionsInProgress: [],
         };
         addUserToDB(newUser);
       }

@@ -6,9 +6,9 @@ import '@vidstack/react/player/styles/base.css';
 
 function VideoPlayer({
   url,
-  aspectRatio = "auto",
+  aspectRatio = undefined,
   className = "",
-  autoPlay = false,
+  autoPlay,
   clipStartTime = 0,
   clipEndTime = undefined,
   controls = true,
@@ -16,7 +16,7 @@ function VideoPlayer({
   loop = false,
 }: {
   url: string;
-  aspectRatio?: string;
+  aspectRatio?: string | undefined;
   className?: string;
   autoPlay?: boolean;
   clipStartTime?: number;

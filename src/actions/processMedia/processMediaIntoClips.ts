@@ -69,10 +69,11 @@ export async function processMediaIntoClips({
   const secondsToAnalyze = minutesToAnalyze * 60;
   const params = {
     audio: mediaURL,
-    audio_end_at: secondsToAnalyze * 1000, //in miliseconds
+    audio_end_at: Math.floor(secondsToAnalyze * 1000), //in miliseconds
     speaker_labels: true,
     //language_detection: true,
   };
+
   const transcript = await client.transcripts.transcribe(params);
 
   let transcriptTextWithEmbeddedTimestamps = "@0 ";
@@ -99,10 +100,10 @@ export async function processMediaIntoClips({
   <transcript>${transcriptTextWithEmbeddedTimestamps}</transcript>
   This is the video transcript, where each sentence begins and ends with a '@' symbol and includes a timestamp in seconds. The text's speaker is also included.
 
-  <clip_topic>${clipsContentPrompt}</clip_topic>
+  <clip_topic>${clipsContentPrompt.slice(0, 200)}</clip_topic>
   This is the user's prompt specifying what the clips should be about.
 
-  <title_prompt>${clipsTitlePrompt}</title_prompt>
+  <title_prompt>${clipsTitlePrompt.slice(0, 200)}</title_prompt>
   This is the user's prompt on how to write a title for each clip.
 
   <clip_duration>${clipsLengthInSeconds}</clip_duration>
@@ -137,19 +138,20 @@ export async function processMediaIntoClips({
       "start": Start timestamp of the clip,
       "end": End timestamp of the clip,
       "title": Title of the clip,
-      "transcript": Transcript of the clip,
+      "transcript": Transcript of the clip WITHOUT timestamps and speakers tags. Do not hullicate,
     },
     ...
   ]
 
   7. Additional guidelines:
-  - Aim for at least 5-10 clips
+  - Aim for at least 5-10 clips. Maximum of 20 clips
   - Ensure clips are spread throughout the video, not clustered in one section
   - Do not include any explanations or additional text in your output
-  - Rank the clips, placing the most interesting and relevant ones at the beginning of the list
+  - Make sure to rank the clips, placing the most interesting and relevant ones at the beginning of the list. Do not rank just by time stamps
 
   Process the inputs, select the most interesting and relevant clips, and provide your output in the specified JSON format without any additional commentary. Do not hallucinate.
   `;
+  console.log(claudePrompt);
 
   let amountOfAttempts = 0;
   const maxAmountOfAttempts = 2;
@@ -165,8 +167,8 @@ export async function processMediaIntoClips({
     try {
       const claudeResponse = await anthropicClient.messages.create({
         model: "claude-3-5-sonnet-20240620",
-        max_tokens: 1000,
-        temperature: 0.7,
+        max_tokens: 8192,
+        temperature: 0.8,
         system:
           "You are an AI assistant tasked with extracting the most interesting clips from a video transcript.",
         messages: [
@@ -182,7 +184,9 @@ export async function processMediaIntoClips({
         ],
       });
 
-      JSONParsedClaudeResponse = await JSON.parse((claudeResponse.content[0] as TextBlock).text);
+      const claudeResponseText = (claudeResponse.content[0] as TextBlock).text;
+
+      JSONParsedClaudeResponse = await JSON.parse(claudeResponseText);
       break;
     } catch (error: any) {
       amountOfAttempts++;
@@ -200,15 +204,13 @@ export async function processMediaIntoClips({
       title: segment.title,
       transcript: segment.transcript,
       time: {
-        start: Math.round(segment.start),
-        end: Math.round(segment.end),
+        start: Math.floor(segment.start),
+        end: Math.ceil(segment.end),
       },
       url: "",
     };
     clips.push(clip);
   }
 
-  return {
-    clips,
-  };
+  return clips;
 }
