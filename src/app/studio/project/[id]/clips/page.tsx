@@ -144,7 +144,7 @@ export default function StudioProjectClipsPage() {
           }
         >
           <div className="space-y-2">
-            <Label>Prompt for clips' content</Label>
+            <Label>Prompt for clips&apos; content</Label>
             <Input
               value={clipsContentPrompt}
               onChange={(e) => setClipsContentPrompt(e.target.value)}
@@ -153,7 +153,7 @@ export default function StudioProjectClipsPage() {
           </div>
 
           <div className="space-y-2">
-            <Label>Prompt for clips' title</Label>
+            <Label>Prompt for clips&apos; title</Label>
             <Input
               value={clipsTitlePrompt}
               onChange={(e) => setClipsTitlePrompt(e.target.value)}

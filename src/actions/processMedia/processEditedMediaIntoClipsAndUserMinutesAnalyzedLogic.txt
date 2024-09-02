@@ -157,7 +157,7 @@ export async function processEditedMediaIntoClipsAndUserMinutesAnalyzedLogic({
   });
 
   // process video into clips
-  const { clips } = await processMediaIntoClips({
+  const { clips = await processMediaIntoClips({
     mediaURL,
     editConfig: {
       clipsLengthInSeconds,
