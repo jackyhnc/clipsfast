@@ -18,6 +18,7 @@ export function ProjectsContextProvider({ children }: { children: React.ReactNod
   const [media, setMedia] = useState<TMedia | undefined>(undefined);
   const [fetchingMediaState, setFetchingMediaState] = useState(true);
 
+
   useEffect(() => {
     setFetchingMediaState(true);
     if (project) {

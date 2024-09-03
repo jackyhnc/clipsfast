@@ -15,6 +15,7 @@ import { ProjectsContextProvider } from "@/context/ProjectsContext";
 
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/components/ui/use-toast";
+import { StudioNavbar } from "@/components/StudioNavbar";
 
 const bigSidebarWidth = 220;
 const smallSidebarWidth = 80;
@@ -202,10 +203,12 @@ export default function StudioLayout({ children }: { children: React.ReactNode }
         <>
           <Sidebar minimizedSidebar={minimizedSidebar} setMinimizedSidebar={setMinimizedSidebar} />
           <div
-            className="px-4 sm:px-14 py-20"
+            className="px-4 sm:px-14 pb-20"
             style={{ marginLeft: `${minimizedSidebar ? smallSidebarWidth : typeof window && window.innerWidth > 630 ? bigSidebarWidth : smallSidebarWidth}px` }}
           >
-            <ProjectsContextProvider>{children}</ProjectsContextProvider>
+            <ProjectsContextProvider>
+              {children}
+            </ProjectsContextProvider>
           </div>
         </>
       );

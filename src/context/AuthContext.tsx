@@ -27,7 +27,36 @@ export const AuthContextProvider = ({ children }: { children: React.ReactNode })
   const router = useRouter();
   const { toast } = useToast();
 
+  // get firebase auth user
   const [user, setUser] = useState<any>(undefined);
+  
+  // get firebase db user data
+  const [userData, setUserData] = useState<TUser | undefined>(undefined);
+  useEffect(() => {
+    if (!user) {
+      setUserData(undefined)
+      return
+    }
+
+    const userDocRef = doc(db, "users", user.email);
+
+    const unsubscribe = onSnapshot(userDocRef, async (snapshot) => {
+      const userSnapData = snapshot.data();
+      const userDoc: TUser = {
+        email: userSnapData?.email,
+        name: userSnapData?.name,
+        projectsIDs: userSnapData?.projectsIDs,
+        userPlan: userSnapData?.userPlan,
+        minutesAnalyzedThisMonth: userSnapData?.minutesAnalyzedThisMonth,
+        lifetimeMinutesAnalyzed: userSnapData?.lifetimeMinutesAnalyzed,
+        actionsInProgress: userSnapData?.actionsInProgress ?? [],
+        clipsInProgress: userSnapData?.clipsInProgress ?? [],
+        clipsProcessed: userSnapData?.clipsProcessed ?? [],
+      }
+      setUserData(userDoc)
+    });
+    return () => unsubscribe();
+  }, [user]);
 
   const signup = async (formdata: FormData) => {
     const email = formdata.get("email") as string;
@@ -61,6 +90,8 @@ export const AuthContextProvider = ({ children }: { children: React.ReactNode })
           minutesAnalyzedThisMonth: 0,
           lifetimeMinutesAnalyzed: 0,
           actionsInProgress: [],
+          clipsInProgress: [],
+          clipsProcessed: [],
         };
         addUserToDB(newUser);
       });
@@ -112,6 +143,8 @@ export const AuthContextProvider = ({ children }: { children: React.ReactNode })
           minutesAnalyzedThisMonth: 0,
           lifetimeMinutesAnalyzed: 0,
           actionsInProgress: [],
+          clipsInProgress: [],
+          clipsProcessed: [],
         };
         addUserToDB(newUser);
       }
@@ -152,7 +185,7 @@ export const AuthContextProvider = ({ children }: { children: React.ReactNode })
   }, [user]);
 
   return (
-    <AuthContext.Provider value={{ user, signup, signin, googleSignin, signout }}>
+    <AuthContext.Provider value={{ userData, user, signup, signin, googleSignin, signout }}>
       {children}
     </AuthContext.Provider>
   );

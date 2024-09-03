@@ -8,6 +8,7 @@ import { TClip } from "@/app/studio/types";
 import { TextBlock } from "@anthropic-ai/sdk/resources/messages.mjs";
 import { getYoutubeInfo } from "@/actions/getYoutubeInfo";
 import { getVideoTypeClassification } from "@/utils/getVideoTypeClassification";
+import { v4 as uuidv4 } from "uuid"
 
 if (!process.env.ASSEMBLYAI_API_KEY) {
   throw new Error("Missing ASSEMBLYAI_API_KEY.");
@@ -198,9 +199,11 @@ export async function processMediaIntoClips({
     throw new Error("AI failed to return parsable JSON even after multiple attempts.");
   }
 
+  const creationTime = Date.now();
   const clips: TClip[] = [];
   for (const segment of JSONParsedClaudeResponse) {
     const clip: TClip = {
+      id: uuidv4(),
       title: segment.title,
       transcript: segment.transcript,
       time: {
@@ -208,6 +211,8 @@ export async function processMediaIntoClips({
         end: Math.ceil(segment.end),
       },
       url: "",
+
+      creationTime,
     };
     clips.push(clip);
   }

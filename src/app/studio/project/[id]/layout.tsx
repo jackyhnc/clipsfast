@@ -8,6 +8,7 @@ import { db } from "@/config/firebase";
 
 import { useProjectsContext } from "@/context/ProjectsContext";
 import { useRouter } from "next/navigation";
+import { UserAuth } from "@/context/AuthContext";
 
 type TStudioProjectProps = {
   params: { id: string };
@@ -22,10 +23,27 @@ export default function StudioProjectLayout({
     setFetchingProjectState: React.Dispatch<React.SetStateAction<boolean>>,
     project: TProject,
   };
+  const { user } = UserAuth() as { user: any };
 
   const router = useRouter()
 
   useEffect(() => {
+    async function checkIfUserIsProjectOwner() {
+      const userDocRef = doc(db, "users", user.email);
+      const userDoc = await getDoc(userDocRef)
+
+      if (!userDoc.exists()) {
+        return
+      }
+
+      const userDocData = userDoc.data()
+      if (!userDocData.projectsIDs.includes(params.id)) {
+        router.push("/studio")
+        throw new Error("You are not the owner of this project.")
+      }
+    }
+    checkIfUserIsProjectOwner()
+
     const projectDocRef = doc(db, "projects", params.id);
     const unsubscribe = onSnapshot(projectDocRef, (projectDocSnap) => {
       if (projectDocSnap.exists()) {
@@ -89,7 +107,6 @@ export default function StudioProjectLayout({
   */
 
   return (
-    //{/*<EditedVideoOutputDisplay className="size-full" /> */}
     <div className="">{children}</div>
   );
 }

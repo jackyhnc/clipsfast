@@ -102,6 +102,8 @@ export async function processMediaIntoClipsAndUserMinutesAnalyzedLogic({
     minutesAnalyzedThisMonth: userDocSnapData?.minutesAnalyzedThisMonth,
     lifetimeMinutesAnalyzed: userDocSnapData?.lifetimeMinutesAnalyzed,
     actionsInProgress: userDocSnapData?.actionsInProgress ?? [],
+    clipsInProgress: userDocSnapData?.clipsInProgress ?? [],
+    clipsProcessed: userDocSnapData?.clipsProcessed ?? [],
   };
   const userPlan = userDoc?.userPlan;
 
@@ -128,43 +130,46 @@ export async function processMediaIntoClipsAndUserMinutesAnalyzedLogic({
     actionsInProgress: arrayUnion(newActionInProgress),
   });
 
-  // add mediaURLBeingAnalyzed to user's actionsInProgress
-  const mediaDocRef = doc(db, "media", await sanitizeMediaURL(mediaURL));
-  const mediaDocSnapData = (await getDoc(mediaDocRef)).data();
-  let mediaDoc: TMedia = {
-    url: mediaDocSnapData?.url,
-    type: mediaDocSnapData?.type,
-    clips: mediaDocSnapData?.clips,
-    percentAnalyzed: mediaDocSnapData?.percentAnalyzed,
-  };
+  //  await new Promise((resolve) => setTimeout(resolve, 1000))
+  // return
 
-  // check if user has enough minutes to analyze video
-  const minutesProvidedForPlan = getUserPlanMinutes(userPlan);
-
-  if (minutesUserAlreadyAnalyzed >= minutesProvidedForPlan) {
-    throw new Error("User already analyzed to the limit their plan allows for this month.");
-  }
-
-  // check if video should be reanalyzed
-  const mediaPercentageAnalyzed: number = mediaDoc?.percentAnalyzed;
-
-  if (reanalyze) {
-    mediaDoc.percentAnalyzed = 0;
-  } else {
-    if (mediaPercentageAnalyzed === 1) {
-      throw new Error("Video already analyzed to 100% and reanalyze option not chosen.");
-    }
-  }
-
-  // calculate percent to be analyzed
-  const { minutesToAnalyze, percentToBeAnalyzed } = calculatePercentToBeAnalyzed({
-    percentAlreadyAnalyzed: mediaDoc?.percentAnalyzed,
-    durationInSeconds: await getVideoDuration({ mediaURL, videoType: mediaDoc?.type }),
-  });
-
-  // process video into clips
-  let clips;
   try {
+    // add mediaURLBeingAnalyzed to user's actionsInProgress
+    const mediaDocRef = doc(db, "media", await sanitizeMediaURL(mediaURL));
+    const mediaDocSnapData = (await getDoc(mediaDocRef)).data();
+    let mediaDoc: TMedia = {
+      url: mediaDocSnapData?.url,
+      type: mediaDocSnapData?.type,
+      clips: mediaDocSnapData?.clips,
+      percentAnalyzed: mediaDocSnapData?.percentAnalyzed,
+    };
+
+    // check if user has enough minutes to analyze video
+    const minutesProvidedForPlan = getUserPlanMinutes(userPlan);
+
+    if (minutesUserAlreadyAnalyzed >= minutesProvidedForPlan) {
+      throw new Error("User already analyzed to the limit their plan allows for this month.");
+    }
+
+    // check if video should be reanalyzed
+    const mediaPercentageAnalyzed: number = mediaDoc?.percentAnalyzed;
+
+    if (reanalyze) {
+      mediaDoc.percentAnalyzed = 0;
+    } else {
+      if (mediaPercentageAnalyzed === 1) {
+        throw new Error("Video already analyzed to 100% and reanalyze option not chosen.");
+      }
+    }
+
+    // calculate percent to be analyzed
+    const { minutesToAnalyze, percentToBeAnalyzed } = calculatePercentToBeAnalyzed({
+      percentAlreadyAnalyzed: mediaDoc?.percentAnalyzed,
+      durationInSeconds: await getVideoDuration({ mediaURL, videoType: mediaDoc?.type }),
+    });
+
+    // process video into clips
+    let clips;
     clips = await processMediaIntoClips({
       mediaURL,
       editConfig: {
@@ -177,34 +182,34 @@ export async function processMediaIntoClipsAndUserMinutesAnalyzedLogic({
     if (!clips) {
       throw new Error("Error processing video into clips.");
     }
+
+    // update media doc values
+    mediaDoc.percentAnalyzed = percentToBeAnalyzed;
+    mediaDoc.clips = clips;
+    console.log(mediaDoc);
+    await setDoc(mediaDocRef, mediaDoc);
+
+    // update user minutes analyzed this month & lifetime minutes analyzed & remove this action from user's actions in progress
+    const minutesAnalyzedFromVideo = minutesToAnalyze;
+
+    let newMinutesUserAlreadyAnalyzed = minutesUserAlreadyAnalyzed + minutesAnalyzedFromVideo;
+    if (newMinutesUserAlreadyAnalyzed >= minutesProvidedForPlan) {
+      console.warn("User's analyze minutes for videos has met its plan limit.");
+    }
+
+    await updateDoc(userDocRef, {
+      minutesAnalyzedThisMonth: newMinutesUserAlreadyAnalyzed,
+      lifetimeMinutesAnalyzed: increment(minutesAnalyzedFromVideo),
+      actionsInProgress: arrayRemove(newActionInProgress), //
+    });
+
+    // email user analyzing is done
+
+    return clips;
   } catch (error: any) {
     await updateDoc(userDocRef, {
       actionsInProgress: arrayRemove(newActionInProgress),
     });
     throw new Error("Error processing video into clips: " + error.message);
   }
-
-  // update media doc values
-  mediaDoc.percentAnalyzed = percentToBeAnalyzed;
-  mediaDoc.clips = clips;
-  console.log(mediaDoc);
-  await setDoc(mediaDocRef, mediaDoc);
-
-  // update user minutes analyzed this month & lifetime minutes analyzed & remove this action from user's actions in progress
-  const minutesAnalyzedFromVideo = minutesToAnalyze;
-
-  let newMinutesUserAlreadyAnalyzed = minutesUserAlreadyAnalyzed + minutesAnalyzedFromVideo;
-  if (newMinutesUserAlreadyAnalyzed >= minutesProvidedForPlan) {
-    console.warn("User's analyze minutes for videos has met its plan limit.");
-  }
-
-  await updateDoc(userDocRef, {
-    minutesAnalyzedThisMonth: newMinutesUserAlreadyAnalyzed,
-    lifetimeMinutesAnalyzed: increment(minutesAnalyzedFromVideo),
-    actionsInProgress: arrayRemove(newActionInProgress), //
-  });
-
-  // email user analyzing is done
-
-  return clips;
 }

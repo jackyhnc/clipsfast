@@ -29,6 +29,8 @@ export type TProjectEditingConfigs = {
 };
 
 export type TClip = {
+  id: string,
+
   title: string,
   transcript: string | undefined,
 
@@ -38,6 +40,8 @@ export type TClip = {
   }
 
   url: string //s3 link to generated clip, cannot be undefined bc firebase cant store undefined
+
+  creationTime: number,
 }
 
 export type TMedia = {
@@ -67,6 +71,9 @@ export type TUser = {
   lifetimeMinutesAnalyzed: number,
 
   actionsInProgress: TActionInProgress[]
+
+  clipsInProgress: TClip[]
+  clipsProcessed: TClip[]
 
   //free 1 hr / small watermark
   //$9.90 lite 15 hr,     creators

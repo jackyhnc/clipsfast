@@ -251,7 +251,7 @@ export default function StudioDashboard() {
     );
   }
   return (
-    <div className="bg-[var(--bg-white)] min-h-lvh">
+    <div className="bg-[var(--bg-white)] min-h-lvh pt-20">
       <div className="space-y-6">
         <div className="flex gap-3 items-center">
           <div className="font-semibold text-2xl">Projects</div>

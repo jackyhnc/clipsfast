@@ -1,12 +1,10 @@
 "use client";
 
-import { processMediaIntoClips } from "@/actions/processMedia/processMediaIntoClips";
 import { processMediaIntoClipsAndUserMinutesAnalyzedLogic } from "@/actions/processMedia/processMediaIntoClipsAndMinutesAnalyzedLogic";
-import { TClip, TMedia, TProject } from "@/app/studio/types";
+import { TClip, TMedia, TProject, TUser } from "@/app/studio/types";
 import { Button } from "@/components/ui/button";
 import { UserAuth } from "@/context/AuthContext";
 import { useProjectsContext } from "@/context/ProjectsContext";
-import { Loader2 } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import {
@@ -24,9 +22,16 @@ import VideoPlayer from "@/components/VideoPlayer";
 import { Progress } from "@/components/ui/progress";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Slider } from "@/components/ui/slider";
+import { StudioNavbar } from "@/components/StudioNavbar";
+import { useRouter } from "next/navigation";
+import { doc, updateDoc } from "firebase/firestore";
+import { db } from "@/config/firebase";
+import { processExportClip } from "@/actions/processMedia/processExportClip";
+
+import { v4 as uuidv4 } from "uuid";
 
 export default function StudioProjectClipsPage() {
-  const { user } = UserAuth() as { user: any };
+  const { user, userData } = UserAuth() as { user: any; userData: TUser | undefined };
   const { project, fetchingProjectState, media, fetchingMediaState } = useProjectsContext() as {
     project: TProject;
     fetchingProjectState: boolean;
@@ -35,14 +40,30 @@ export default function StudioProjectClipsPage() {
     fetchingMediaState: boolean;
   };
 
+  const router = useRouter();
+
   if (fetchingProjectState || fetchingMediaState) {
+    const breadCrumbItemsList = [
+      {
+        name: "Projects",
+        href: "/studio",
+      },
+      {
+        name: "Clips",
+        href: `/studio/project/${project?.projectID}/clips`,
+      },
+    ];
+
     return (
-      <main className="flex flex-col items-center justify-center">
-        <div className="flex items-center gap-3 text-lg w-fit">
-          <div className="font-medium">Loading video information...</div>
-          <i className="fa-solid fa-spinner animate-spin"></i>
-        </div>
-      </main>
+      <>
+        <StudioNavbar breadCrumbItems={breadCrumbItemsList} />
+        <main className="flex flex-col items-center justify-center">
+          <div className="flex items-center gap-3 text-lg w-fit">
+            <div className="font-medium">Loading video information...</div>
+            <i className="fa-solid fa-spinner animate-spin"></i>
+          </div>
+        </main>
+      </>
     );
   }
 
@@ -63,7 +84,7 @@ export default function StudioProjectClipsPage() {
     const handleGenerateClips = async ({
       reanalyze,
       e,
-      editConfig
+      editConfig,
     }: {
       reanalyze: boolean;
       e?: any;
@@ -71,19 +92,27 @@ export default function StudioProjectClipsPage() {
         clipsLengthInSeconds: number;
         clipsContentPrompt: string;
         clipsTitlePrompt: string;
-      }
-    }) => {
-      setIsGeneratingClips(true);
-      const props = {
-        mediaURL: media.url,
-        userEmail: user.email,
-        reanalyze,
-        editConfig: editConfig ?? {},
       };
-      
+    }) => {
       e?.preventDefault();
-      
+      const mediaAlreadyInProcess = userData?.actionsInProgress
+        .map((action) => action.mediaURLBeingAnalyzed)
+        .includes(media.url);
+      if (mediaAlreadyInProcess) {
+        setIsGeneratingClips(false);
+        throw new Error("Media is already being analyzed.");
+      }
+
       try {
+        setIsGeneratingClips(true);
+
+        const props = {
+          mediaURL: media.url,
+          userEmail: user.email,
+          reanalyze,
+          editConfig: editConfig ?? {},
+        };
+
         await processMediaIntoClipsAndUserMinutesAnalyzedLogic(props);
         //await new Promise(resolve => setTimeout(resolve, 100000));
       } catch (error) {
@@ -99,6 +128,18 @@ export default function StudioProjectClipsPage() {
     }
 
     const [isGeneratingClips, setIsGeneratingClips] = useState(false);
+    useEffect(() => {
+      const mediaAlreadyInProcess = userData?.actionsInProgress
+        .map((action) => action.mediaURLBeingAnalyzed)
+        .includes(media.url);
+      if (mediaAlreadyInProcess) {
+        setIsGeneratingClips(true);
+      }
+    }, [userData]);
+
+    useEffect(() => {
+      console.log(isGeneratingClips);
+    }, [isGeneratingClips]);
 
     const [generatingClipProgress, setGeneratingClipsProgress] = useState(0);
     //add bs to progress bar
@@ -128,21 +169,21 @@ export default function StudioProjectClipsPage() {
       const [clipsContentPrompt, setClipsContentPrompt] = useState("");
       const [clipsTitlePrompt, setClipsTitlePrompt] = useState("");
 
+      function handleGenerateClipsWithOptions(e: any) {
+        e.preventDefault();
+
+        handleGenerateClips({
+          reanalyze,
+          e,
+          editConfig: {
+            clipsLengthInSeconds,
+            clipsContentPrompt,
+            clipsTitlePrompt,
+          },
+        });
+      }
       return (
-        <form
-          className="space-y-6"
-          onSubmit={(e) =>
-            handleGenerateClips({
-              reanalyze,
-              e,
-              editConfig: {
-                clipsLengthInSeconds,
-                clipsContentPrompt,
-                clipsTitlePrompt,
-              },
-            })
-          }
-        >
+        <form className="space-y-6" onSubmit={(e) => handleGenerateClipsWithOptions(e)}>
           <div className="space-y-2">
             <Label>Prompt for clips&apos; content</Label>
             <Input
@@ -197,12 +238,18 @@ export default function StudioProjectClipsPage() {
       bg-[var(--light-salmon-orange)] text-center min-w-[250px] px-10"
       >
         <div className="font-medium text-lg">
-          {isGeneratingClips ? "Generating clips..." : `${Math.ceil(media.percentAnalyzed * 100)}% analyzed. ${
-            reanalyze ? "Wanna see fresh new clips?" : ""
-          }`}
+          {isGeneratingClips
+            ? "Generating clips..."
+            : `${Math.ceil(media.percentAnalyzed * 100)}% analyzed. ${
+                reanalyze ? "Wanna see fresh new clips?" : ""
+              }`}
         </div>
         <div className="flex flex-col space-y-2">
-          <Button className="bg-[var(--salmon-orange)] text-sm sm:text-lg" disabled={isGeneratingClips} onClick={() => handleGenerateClips({ reanalyze })}>
+          <Button
+            className="bg-[var(--salmon-orange)] text-sm sm:text-lg"
+            disabled={isGeneratingClips}
+            onClick={() => handleGenerateClips({ reanalyze })}
+          >
             {buttonText}
             {isGeneratingClips ? (
               <i className="fa-solid fa-spinner animate-spin text-[var(--bg-white)] ml-2"></i>
@@ -238,6 +285,14 @@ export default function StudioProjectClipsPage() {
   }
 
   function ClipsSection() {
+    async function handleSelectClip(selectedClip: TClip) {
+      const props = {
+        clip: selectedClip,
+        userEmail: user.email,
+      }
+      processExportClip(props);
+      router.push(`/studio/project/${project.projectID}/clips/${selectedClip.id}`)
+    }
     return (
       <div
         className="grid gap-x-8 gap-y-10 bg-[var(--bg-white)] rounded-lg
@@ -326,7 +381,14 @@ export default function StudioProjectClipsPage() {
                               <div className="pl-2 hidden sm:block">{`${startTimestamp} to ${endTimestamp}`}</div>
                             </div>
                           </div>
-                          <Button className="bg-[var(--salmon-orange)] justify-end">Select Clip</Button>
+                          <Button
+                            onClick={() => {
+                              handleSelectClip(clip);
+                            }}
+                            className="bg-[var(--salmon-orange)] justify-end"
+                          >
+                            Select Clip
+                          </Button>
                         </div>
                       </div>
                     </div>
@@ -340,28 +402,41 @@ export default function StudioProjectClipsPage() {
     );
   }
 
+  const breadCrumbItemsList = [
+    {
+      name: "Projects",
+      href: "/studio",
+    },
+    {
+      name: "Clips",
+      href: `/studio/project/${project?.projectID}/clips`,
+    },
+  ];
   return (
-    <main className="flex flex-col items-center justify-center">
-      <div className="space-y-14">
-        <nav className="w-fit items-start space-y-4">
-          <div className="flex gap-3 text-3xl">
-            <div className="font-semibold">
-              {`Clips for "${project?.name}"`}
-              <span className="ml-2">
-                <Link href={project?.media.url ?? ""}>
-                  <i className="fa-solid fa-up-right-from-square text-[var(--salmon-orange)]"></i>
-                </Link>
-              </span>
+    <>
+      <StudioNavbar breadCrumbItems={breadCrumbItemsList} />
+      <main className="flex flex-col items-center justify-center">
+        <div className="space-y-14">
+          <nav className="w-fit items-start space-y-4">
+            <div className="flex gap-3 text-3xl">
+              <div className="font-semibold">
+                {`Clips for "${project?.name}"`}
+                <span className="ml-2">
+                  <Link href={project?.media.url ?? ""}>
+                    <i className="fa-solid fa-up-right-from-square text-[var(--salmon-orange)]"></i>
+                  </Link>
+                </span>
+              </div>
             </div>
-          </div>
-          <div className="text-lg text-[var(--slight-gray)]">
-            Here are the highlighted clips of the video, pick your favorite ones ❤️
-          </div>
-        </nav>
+            <div className="text-lg text-[var(--slight-gray)]">
+              Here are the highlighted clips of the video, pick your favorite ones ❤️
+            </div>
+          </nav>
 
-        <ClipsSection />
-        <GenerateClipsSection />
-      </div>
-    </main>
+          <ClipsSection />
+          <GenerateClipsSection />
+        </div>
+      </main>
+    </>
   );
 }
