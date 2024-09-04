@@ -14,11 +14,12 @@ import { db } from "@/config/firebase";
 import { UserAuth } from "@/context/AuthContext";
 import { doc, onSnapshot } from "firebase/firestore";
 import Image from "next/image";
+import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 
 export default async function ExportClipPage({ params }: { params: { exportClipID: string } }) {
   const { user } = UserAuth() as { user: any };
-  const [isProcessesingClip, setIsProcessingClip] = useState(false);
+  const [isProcessesingClip, setIsProcessingClip] = useState(true);
 
   useEffect(() => {
     const userDocRef = doc(db, "users", user.email);
@@ -30,13 +31,27 @@ export default async function ExportClipPage({ params }: { params: { exportClipI
 
       const clipsInProgress = userDoc.clipsInProgress;
       setIsProcessingClip(clipsInProgress.includes(params.exportClipID));
+
+      const clipsProcessed = userDoc.clipsProcessed;
     });
 
     return () => unsubscribe();
   });
 
   function ClipProcessedPage() {
-    return <div className="">{/*<VideoPlayer url={}/>*/}</div>;
+    const router = useRouter()
+    useEffect(() => {
+      router.push(`/studio/clips-history/clip/${params.exportClipID}`)
+    },[])
+    return (
+      <div className="w-full h-lvh flex items-center justify-center flex-col">
+        <div className="flex gap-1 w-fit">
+          <div className="">🎉</div>
+          <div className="text-center w-fit">Your clip has been processed!</div>
+          <div className="">🎉</div>
+        </div>
+      </div>
+    )
   }
 
   function ClipNotProcessedPage() {
@@ -133,5 +148,5 @@ export default async function ExportClipPage({ params }: { params: { exportClipI
     }
   }
 
-  return <div className="">{isProcessesingClip ? <ClipProcessedPage /> : <ClipNotProcessedPage />}</div>;
+  return <div className="">{isProcessesingClip ? <ClipNotProcessedPage /> : <ClipProcessedPage />}</div>;
 }

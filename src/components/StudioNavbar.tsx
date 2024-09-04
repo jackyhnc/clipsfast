@@ -19,12 +19,23 @@ export function StudioNavbar({ breadCrumbItems }: { breadCrumbItems: Array<TBrea
           <BreadcrumbList>
             {breadCrumbItems.map((item: TBreadCrumbItem) => {
               const index = breadCrumbItems.indexOf(item);
+
+              if (index === breadCrumbItems.length - 1) {
+                return (
+                  <>
+                    <BreadcrumbItem key={index}>
+                      <BreadcrumbPage>{item.name}</BreadcrumbPage>
+                    </BreadcrumbItem>
+                  </>
+                );
+              }
+
               return (
                 <>
-                  <BreadcrumbItem>
+                  <BreadcrumbItem key={index}>
                     <BreadcrumbLink href={item.href}>{item.name}</BreadcrumbLink>
                   </BreadcrumbItem>
-                  {(index !== breadCrumbItems.length - 1) && <BreadcrumbSeparator />}
+                  <BreadcrumbSeparator />
                 </>
               );
             })}

@@ -3,7 +3,7 @@ export default function Loading() {
   const count = Array.from({ length: 6 }, (_, i) => i + 1)
 
   return (
-    <div className="bg-[var(--bg-white)] min-h-lvh">
+    <div className="bg-[var(--bg-white)] min-h-lvh py-20">
       <div className="space-y-6">
         <div className="flex gap-3 items-center">
           <div className="w-[250px] bg-[var(--skeleton-gray)] h-6 rounded-lg animate-pulse"></div>

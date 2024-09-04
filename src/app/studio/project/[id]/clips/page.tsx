@@ -137,10 +137,6 @@ export default function StudioProjectClipsPage() {
       }
     }, [userData]);
 
-    useEffect(() => {
-      console.log(isGeneratingClips);
-    }, [isGeneratingClips]);
-
     const [generatingClipProgress, setGeneratingClipsProgress] = useState(0);
     //add bs to progress bar
     useEffect(() => {
@@ -289,9 +285,9 @@ export default function StudioProjectClipsPage() {
       const props = {
         clip: selectedClip,
         userEmail: user.email,
-      }
+      };
       processExportClip(props);
-      router.push(`/studio/project/${project.projectID}/clips/${selectedClip.id}`)
+      router.push(`/studio/project/${project.projectID}/clips/${selectedClip.id}`);
     }
     return (
       <div

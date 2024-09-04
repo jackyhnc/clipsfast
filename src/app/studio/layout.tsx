@@ -18,7 +18,7 @@ import { useToast } from "@/components/ui/use-toast";
 import { StudioNavbar } from "@/components/StudioNavbar";
 
 const bigSidebarWidth = 220;
-const smallSidebarWidth = 80;
+const smallSidebarWidth = 84;
 
 function Sidebar(props: any) {
   const { minimizedSidebar, setMinimizedSidebar } = props;
@@ -54,6 +54,11 @@ function Sidebar(props: any) {
       name: "Settings",
       link: "/studio/settings",
       icon: "fa-solid fa-gear",
+    },
+    {
+      name: "Clips History",
+      link: "/studio/clips-history",
+      icon: "fa-solid fa-clock-rotate-left",
     },
   ];
 
@@ -103,7 +108,9 @@ function Sidebar(props: any) {
                   onClick={() => router.push(button.link)}
                 >
                   <div className="flex gap-3 items-start px-0">
-                    <i className={`${button.icon} text-[var(--purple-black)] text-xl`}></i>
+                    <div className="size-5 flex items-center justify-center">
+                      <i className={`${button.icon} text-[var(--purple-black)] text-xl`}></i>
+                    </div>
                     <div className="text-[var(--purple-black)] text-left">{button.name}</div>
                   </div>
                 </Button>
@@ -144,11 +151,13 @@ function Sidebar(props: any) {
               return (
                 <Button
                   variant={"ghost"}
-                  className="w-full cursor-pointer"
+                  className="w-full cursor-pointer px-2"
                   key={button.name}
                   onClick={() => router.push(button.link)}
                 >
-                  <i className={`${button.icon} text-[var(--purple-black)] text-xl size-5`}></i>
+                  <div className="size-5 flex justify-center items-center">
+                    <i className={`${button.icon} text-[var(--purple-black)] text-xl`}></i>
+                  </div>
                 </Button>
               );
             })}
@@ -177,11 +186,23 @@ export default function StudioLayout({ children }: { children: React.ReactNode }
 
   const [isUserValid, setIsUserValid] = useState(false);
 
-  const [minimizedSidebar, setMinimizedSidebar] = useState(false);
-
+  const [smallScreen, setSmallScreen] = useState(false);
   useEffect(() => {
-    setMinimizedSidebar((typeof window && window.innerWidth) < 630 ? true : false);
-  },[]);
+    const handleResize = () => {
+      setSmallScreen((typeof window && window.innerWidth) < 630);
+    };
+    handleResize();
+
+    window.addEventListener("resize", handleResize);
+    return () => {
+      window.removeEventListener("resize", handleResize);
+    };
+  }, []);
+
+  const [minimizedSidebar, setMinimizedSidebar] = useState(false);
+  useEffect(() => {
+    setMinimizedSidebar(smallScreen);
+  }, [smallScreen]);
 
   useEffect(() => {
     const checkAuth = () => {
@@ -204,11 +225,17 @@ export default function StudioLayout({ children }: { children: React.ReactNode }
           <Sidebar minimizedSidebar={minimizedSidebar} setMinimizedSidebar={setMinimizedSidebar} />
           <div
             className="px-4 sm:px-14 pb-20"
-            style={{ marginLeft: `${minimizedSidebar ? smallSidebarWidth : typeof window && window.innerWidth > 630 ? bigSidebarWidth : smallSidebarWidth}px` }}
+            style={{
+              marginLeft: `${
+                minimizedSidebar
+                  ? smallSidebarWidth
+                  : typeof window && window.innerWidth > 630
+                  ? bigSidebarWidth
+                  : smallSidebarWidth
+              }px`,
+            }}
           >
-            <ProjectsContextProvider>
-              {children}
-            </ProjectsContextProvider>
+            <ProjectsContextProvider>{children}</ProjectsContextProvider>
           </div>
         </>
       );

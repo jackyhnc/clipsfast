@@ -44,6 +44,10 @@ export type TClip = {
   creationTime: number,
 }
 
+export type TClipProcessed = TClip & {
+  thumbnail: string
+}
+
 export type TMedia = {
   url: string,
 
@@ -73,7 +77,7 @@ export type TUser = {
   actionsInProgress: TActionInProgress[]
 
   clipsInProgress: TClip[]
-  clipsProcessed: TClip[]
+  clipsProcessed: TClipProcessed[]
 
   //free 1 hr / small watermark
   //$9.90 lite 15 hr,     creators
