@@ -184,13 +184,15 @@ export default function StudioDashboard() {
                       <TooltipTrigger>
                         <div>
                           {project.thumbnail ? (
-                            <Image
-                              src={project.thumbnail}
-                              alt="project thumbnail"
-                              width={200}
-                              height={0}
-                              className="h-auto rounded-sm aspect-[16/9] object-cover cursor-pointer"
-                            />
+                            <div className="relative ">
+                              <Image
+                                src={project.thumbnail}
+                                alt="project thumbnail"
+                                width={200}
+                                height={0}
+                                className="rounded-sm aspect-[16/9] object-cover cursor-pointer"
+                              />
+                            </div>
                           ) : (
                             <div className="rounded-sm w-[200px] bg-[var(--light-gray)] aspect-[16/9] flex">
                               <i className="fa-solid fa-video text-5xl m-auto text-[var(--bg-white)]" />

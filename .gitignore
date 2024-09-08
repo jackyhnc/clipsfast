@@ -1,5 +1,8 @@
 # See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
 
+# media
+*.mp4
+
 # aws folder
 __aws/_processVideo/node_modules
 

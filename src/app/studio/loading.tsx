@@ -10,8 +10,8 @@ export default function Loading() {
         </div>
 
         <div className="">
-          <div className="animate-pulse grid grid-cols-[repeat(auto-fit,218px)] gap-6 p-6 bg-[var(--bg-white)] 
-            border-2 rounded-lg items-center">
+          <div className="animate-pulse sm:grid grid-cols-[repeat(auto-fit,218px)] gap-6 p-6 bg-[var(--bg-white)] 
+            border-2 rounded-lg items-center hidden">
             {count.map((c) => {
               return (
                 <div className="p-2 bg-[var(--bg-white)] rounded-md border-[1px]" key={c}>

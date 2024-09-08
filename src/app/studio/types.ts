@@ -33,19 +33,23 @@ export type TClip = {
 
   title: string,
   transcript: string | undefined,
+  
+  transcriptID: string,
 
   time: {
     start: number,
     end: number,
   }
 
-  url: string //s3 link to generated clip, cannot be undefined bc firebase cant store undefined
+  mediaURL: string,
 
   creationTime: number,
 }
 
 export type TClipProcessed = TClip & {
-  thumbnail: string
+  thumbnail: string,
+  generatedURL: string //s3 link to generated clip, cannot be undefined bc firebase cant store undefined
+
 }
 
 export type TMedia = {

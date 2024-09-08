@@ -2,9 +2,10 @@
 
 import ytdl from "@distube/ytdl-core";
 
+
 export async function getYoutubeInfo(url: string) {
   try {
-    const youtubeInfo = await ytdl.getBasicInfo(url);
+    const youtubeInfo = await ytdl.getInfo(url);
 
     return {
       title: youtubeInfo.videoDetails.title,

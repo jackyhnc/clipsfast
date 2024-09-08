@@ -76,7 +76,6 @@ export async function processMediaIntoClips({
   };
 
   const transcript = await client.transcripts.transcribe(params);
-
   let transcriptTextWithEmbeddedTimestamps = "@0 ";
   let currentSpeaker = undefined;
 
@@ -206,11 +205,12 @@ export async function processMediaIntoClips({
       id: uuidv4(),
       title: segment.title,
       transcript: segment.transcript,
+      transcriptID: transcript.id,
       time: {
         start: Math.floor(segment.start),
         end: Math.ceil(segment.end),
       },
-      url: "",
+      mediaURL,
 
       creationTime,
     };

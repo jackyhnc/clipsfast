@@ -2,7 +2,6 @@
 import { UserAuth } from "@/context/AuthContext";
 import { TClipProcessed, TUser } from "../types";
 import Image from "next/image";
-import { TooltipProvider } from "@radix-ui/react-tooltip";
 import {
   Dialog,
   DialogTrigger,
@@ -13,95 +12,28 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { useState } from "react";
+import VideoPlayer from "@/components/VideoPlayer";
+import { ScrollArea } from "@/components/ui/scroll-area";
 
 export default async function ClipsProcessedHistoryPage() {
   //const { user, userData } = UserAuth() as { user: any; userData: TUser | undefined };
   const clips: Array<TClipProcessed> = [
     {
+      mediaURL: "asdfasdf.com",
       id: "k1lj2n3kj1n2k3j",
-      title: "cool ass clip lkajsdfajs;dfas",
+      title: "cool ass casdfasdfasdfasdfsadflip lkajsdfajsdfas",
       transcript:
         "transcrip tcool ass transcript OMGGG transcrip tcool ass transcript transcrip tcool ass transcript transcrip tcool ass transcript transcrip tcool ass transcript transcrip tcool ass transcript transcrip tcool ass transcript transcrip tcool ass transcript transcrip tcool ass transcript transcrip tcool ass transcript transcrip tcool ass transcript ",
       time: {
         start: 0,
         end: 10,
       },
-      url: "s3/asdfasdfasdf.com/mp3",
+      generatedURL: "s3/asdfasdfasdf.com/mp3",
       creationTime: Date.now(),
       thumbnail:
         "https://clipsfast.s3.amazonaws.com/public/284BA690-EB16-4797-AD1B-0BE65F1FCC2C_1_201_a.jpeg",
     },
-    {
-      id: "k1lj2n3kj1n2k3j",
-      title: "cool ass clip lkajsdfajs;dfas",
-      transcript:
-        "transcrip tcool ass transcript OMGGG transcrip tcool ass transcript transcrip tcool ass transcript transcrip tcool ass transcript transcrip tcool ass transcript transcrip tcool ass transcript transcrip tcool ass transcript transcrip tcool ass transcript transcrip tcool ass transcript transcrip tcool ass transcript transcrip tcool ass transcript ",
-      time: {
-        start: 0,
-        end: 10,
-      },
-      url: "s3/asdfasdfasdf.com/mp3",
-      creationTime: Date.now(),
-      thumbnail:
-        "https://clipsfast.s3.amazonaws.com/public/284BA690-EB16-4797-AD1B-0BE65F1FCC2C_1_201_a.jpeg",
-    },
-    {
-      id: "k1lj2n3kj1n2k3j",
-      title: "cool ass clip lkajsdfajs;dfas",
-      transcript:
-        "transcrip tcool ass transcript OMGGG transcrip tcool ass transcript transcrip tcool ass transcript transcrip tcool ass transcript transcrip tcool ass transcript transcrip tcool ass transcript transcrip tcool ass transcript transcrip tcool ass transcript transcrip tcool ass transcript transcrip tcool ass transcript transcrip tcool ass transcript ",
-      time: {
-        start: 0,
-        end: 10,
-      },
-      url: "s3/asdfasdfasdf.com/mp3",
-      creationTime: Date.now(),
-      thumbnail:
-        "https://clipsfast.s3.amazonaws.com/public/284BA690-EB16-4797-AD1B-0BE65F1FCC2C_1_201_a.jpeg",
-    },
-    {
-      id: "k1lj2n3kj1n2k3j",
-      title: "cool ass clip lkajsdfajs;dfas",
-      transcript:
-        "transcrip tcool ass transcript OMGGG transcrip tcool ass transcript transcrip tcool ass transcript transcrip tcool ass transcript transcrip tcool ass transcript transcrip tcool ass transcript transcrip tcool ass transcript transcrip tcool ass transcript transcrip tcool ass transcript transcrip tcool ass transcript transcrip tcool ass transcript ",
-      time: {
-        start: 0,
-        end: 10,
-      },
-      url: "s3/asdfasdfasdf.com/mp3",
-      creationTime: Date.now(),
-      thumbnail:
-        "https://clipsfast.s3.amazonaws.com/public/284BA690-EB16-4797-AD1B-0BE65F1FCC2C_1_201_a.jpeg",
-    },
-    {
-      id: "k1lj2n3kj1n2k3j",
-      title: "cool ass clip lkajsdfajs;dfas",
-      transcript:
-        "transcrip tcool ass transcript OMGGG transcrip tcool ass transcript transcrip tcool ass transcript transcrip tcool ass transcript transcrip tcool ass transcript transcrip tcool ass transcript transcrip tcool ass transcript transcrip tcool ass transcript transcrip tcool ass transcript transcrip tcool ass transcript transcrip tcool ass transcript ",
-      time: {
-        start: 0,
-        end: 10,
-      },
-      url: "s3/asdfasdfasdf.com/mp3",
-      creationTime: Date.now(),
-      thumbnail:
-        "https://clipsfast.s3.amazonaws.com/public/284BA690-EB16-4797-AD1B-0BE65F1FCC2C_1_201_a.jpeg",
-    },
-    {
-      id: "k1lj2n3kj1n2k3j",
-      title: "cool ass clip lkajsdfajs;dfas",
-      transcript:
-        "transcrip tcool ass transcript OMGGG transcrip tcool ass transcript transcrip tcool ass transcript transcrip tcool ass transcript transcrip tcool ass transcript transcrip tcool ass transcript transcrip tcool ass transcript transcrip tcool ass transcript transcrip tcool ass transcript transcrip tcool ass transcript transcrip tcool ass transcript ",
-      time: {
-        start: 0,
-        end: 10,
-      },
-      url: "s3/asdfasdfasdf.com/mp3",
-      creationTime: Date.now(),
-      thumbnail:
-        "https://clipsfast.s3.amazonaws.com/public/284BA690-EB16-4797-AD1B-0BE65F1FCC2C_1_201_a.jpeg",
-    },
-  ];
+  ]
   function getFormatSecondsToTimestamp(seconds: number) {
     const minute = Math.floor(seconds / 60)
       .toString()
@@ -113,7 +45,7 @@ export default async function ClipsProcessedHistoryPage() {
   function ProcessedClipsSection() {
     return (
       <div className="">
-        <div className="flex gap-x-8 bg-[var(--bg-white)] flex-col gap-2 rounded-lg overflow-x-scroll bg-gray-200 borde">
+        <div className="flex bg-[var(--bg-white)] gap-4 flex-wrap">
           {clips.map((clip) => {
             const clipDateObj = new Date(clip.creationTime);
             const clipDate = clipDateObj.toLocaleDateString("en-US", {
@@ -128,24 +60,86 @@ export default async function ClipsProcessedHistoryPage() {
             const duration = clip.time.end - clip.time.start;
 
             return (
-              <div className="flex">
-                <div className="h-[90px] w-[50px] relative">
-                  <Image
-                    src={clip.thumbnail}
-                    alt="project thumbnail"
-                    fill
-                    className="w-full rounded-sm object-cover cursor-pointer"
-                  />
+              <div className="flex border-2 rounded-md p-4 gap-4 hover:border-[var(--light-gray)] transition-all relative">
+                <div className="w-[85px] h-[150px] bg-[var(--slight-gray)] relative rounded-md overflow-hidden">
+                  <Image src={clip.thumbnail} alt="project thumbnail" fill />
                 </div>
-                <div className="flex flex-col">
-                  <div className="">{clip.title ?? "Untitled"}</div>
-                  <div className="">{clip.transcript ?? "No Transcript"}</div>
-                  <div className="flex gap-1 items-center text-xs text-[var(--slight-gray)]">
-                    <i className="fa-regular fa-clock"></i>
-                    <div className="divide-x divide-[var(--slight-gray)] flex items-center">
-                      <div className="pr-1">{`${duration} seconds`}</div>
-                      <div className="pl-1 hidden sm:block">{`${startTimestamp} to ${endTimestamp}`}</div>
+                <div className="flex flex-col w-fit justify-between">
+                  <div className="space-y-1">
+                    <div className="font-medium text-lg break-all line-clamp-1">
+                      {clip.title ?? "Untitled"}
                     </div>
+                    <div className="line-clamp-2">{clip.transcript ?? "No Transcript"}</div>
+                    <div className="flex gap-1 items-center text-xs text-[var(--slight-gray)]">
+                      <i className="fa-regular fa-clock"></i>
+                      <div className="divide-x divide-[var(--slight-gray)] flex items-center">
+                        <div className="pr-1">{`${duration} seconds`}</div>
+                        <div className="pl-1 hidden sm:block">{`${startTimestamp} to ${endTimestamp}`}</div>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="flex justify-between items-end gap-2">
+                    <div className="text-xs text-[var(--slight-gray)]">
+                      Date Created: {clipDate ?? "No Date Created"}
+                    </div>
+                    <Dialog>
+                      <DialogTrigger asChild>
+                        <Button
+                          variant={"outline"}
+                          size={"sm"}
+                          className="transition ease-in bg-[var(--bg-white)] border-[var(--salmon-orange)]
+                    hover:bg-[var(--salmon-orange)] group/card-button leading-none border-2"
+                        >
+                          <div className="flex gap-2 items-center">
+                            <i
+                              className="fa-solid fa-play text-sm text-[var(--salmon-orange)]
+                    group-hover/card-button:text-[var(--bg-white)] leading-none"
+                            ></i>
+                            <div className="text-[var(--salmon-orange)] group-hover/card-button:text-[var(--bg-white)] transition-all duration-75">
+                              View Clip
+                            </div>
+                          </div>
+                        </Button>
+                      </DialogTrigger>
+                      <DialogContent className="sm:max-w-[600px] overflow-auto py-0">
+                        <div className="p-8">
+                          <div className="text-center text-xl font-medium pb-6">{clip.title}</div>
+
+                          <div className="space-y-4">
+                            <VideoPlayer
+                              url={clip.generatedURL}
+                              className="rounded-lg w-[100px] pb-2"
+                              clipStartTime={clip.time.start}
+                              clipEndTime={clip.time.end}
+                              autoPlay={false}
+                            />
+
+                            <div className="relative w-full pb-2">
+                              <div
+                                className="bg-gradient-to-t from-[var(--bg-white)] via-[var(--bg-white)]
+                          absolute bottom-2 size-full h-10 z-10"
+                              ></div>
+                              <ScrollArea className="h-[200px] rounded-md border p-4 w-full z-9">
+                                {clip.transcript ?? ""}
+                              </ScrollArea>
+                            </div>
+
+                            <div className="flex w-full justify-between">
+                              <div className="flex gap-2 items-center text-sm text-[var(--slight-gray)]">
+                                <i className="fa-regular fa-clock"></i>
+                                <div className="divide-x divide-[var(--slight-gray)] flex items-center">
+                                  <div className="pr-2">{`${duration} seconds`}</div>
+                                  <div className="pl-2 hidden sm:block">{`${startTimestamp} to ${endTimestamp}`}</div>
+                                </div>
+                              </div>
+                              <Button onClick={() => {}} className="bg-[var(--salmon-orange)] justify-end">
+                                Select Clip
+                              </Button>
+                            </div>
+                          </div>
+                        </div>
+                      </DialogContent>
+                    </Dialog>
                   </div>
                 </div>
               </div>
