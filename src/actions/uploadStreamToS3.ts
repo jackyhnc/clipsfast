@@ -42,6 +42,7 @@ export const uploadStreamToS3 = async (stream: PassThrough, keyFilePath: string)
       Key: keyFilePath,
     };
     const getObjectCommand = new GetObjectCommand(getObjectParams)
+
     const signedUrl = await getSignedUrl(s3Client, getObjectCommand); // no expiration on link
 
     return signedUrl

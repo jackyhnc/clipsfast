@@ -48,6 +48,7 @@ export type TClip = {
 
 export type TClipProcessed = TClip & {
   thumbnail: string,
+  
   generatedURL: string //s3 link to generated clip, cannot be undefined bc firebase cant store undefined
 
 }

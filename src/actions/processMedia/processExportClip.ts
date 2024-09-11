@@ -8,6 +8,10 @@ import { PassThrough } from "stream";
 
 import { spawn } from "child_process";
 import { AssemblyAI } from "assemblyai";
+import { v4 } from "uuid";
+import { getIdealYoutubeVideoAndAudioOnClient } from "@/utils/getIdealYoutubeVideoAndAudioOnClient";
+import { uploadStreamToS3 } from "../uploadStreamToS3";
+import { createWriteStream } from "fs";
 
 type TClipEditConfig = {
   brainrotClip:
@@ -26,67 +30,115 @@ export async function processClip({
   clipEditConfig: TClipEditConfig;
   directURLs: any;
 }) {
+
+  // process subtitles
+
   const client = new AssemblyAI({
     apiKey: process.env.ASSEMBLYAI_API_KEY || "",
   });
-  
-  const transcriptObj = await client.transcripts.get(clip.transcriptID)
+
+  const transcriptObj = await client.transcripts.get(clip.transcriptID);
   if (!transcriptObj) {
     throw new Error("Transcript ID didn't work for video.");
   }
   if (!transcriptObj.words) {
     throw new Error("No words object for this transcript.");
   }
+  const trimmedTranscriptObj = transcriptObj.words.filter(
+    ({ start, end }) => start / 1000 >= clip.time.start && end / 1000 <= clip.time.end
+  );
 
   type TSubtitlesObj = {
-    text: string | undefined,
-    start: number | undefined,
-    end: number | undefined,
-  }
-  const subtitlesObj: TSubtitlesObj[] = []
+    text: string;
+    start: number;
+    end: number;
+  };
+  const subtitlesObj: TSubtitlesObj[] = [];
 
-  const currentSubtitlesObj: TSubtitlesObj = {
-    text: undefined,
-    start: undefined,
-    end: undefined,
-  }
-  let maxWordsAtOnce = undefined
+  let currentSubtitlesObj: { text: string | undefined; start: number | undefined; end: number | undefined } =
+    {
+      text: undefined,
+      start: undefined,
+      end: undefined,
+    };
+  const maxWordsAtOnce = 5;
+  const maxCharactersAtOnce = 24;
+  const minimumSecondsBetweenWords = 1;
 
+  for (const wordObj of trimmedTranscriptObj) {
+    const word = wordObj.text;
+    const start = Number((wordObj.start / 1000 - clip.time.start).toFixed(3));
+    const end = Number((wordObj.end / 1000 - clip.time.start).toFixed(3));
 
-  /////// make it so if the next word is far away like 1 second. it cuts. but ALSO, keep the max words at once under 1-3.
-  for (const wordObj of transcriptObj.words) {
-    const word = wordObj.text
-    const start = wordObj.start
-    const end = wordObj.end
-    
-    if (!currentSubtitlesObj.text && !maxWordsAtOnce) {
-      currentSubtitlesObj.text = word
-      currentSubtitlesObj.start = start
+    if (!currentSubtitlesObj.text) {
+      currentSubtitlesObj.text = word;
+      currentSubtitlesObj.start = start;
 
-      const absoluteMaxWordsAtOnce = 3
-      maxWordsAtOnce = Math.ceil(Math.random() * absoluteMaxWordsAtOnce)
+      if (/[.!?,]/.test(currentSubtitlesObj.text.slice(-1))) {
+        currentSubtitlesObj.end = end;
+        // @ts-ignore
+        subtitlesObj.push(currentSubtitlesObj);
 
-      continue
+        currentSubtitlesObj = {
+          text: undefined,
+          start: undefined,
+          end: undefined,
+        };
+      }
+
+      continue;
     }
 
-    const amountOfWordsInCurrentSubtitlesObj = (currentSubtitlesObj.text!.split(" ")).length
-    if (amountOfWordsInCurrentSubtitlesObj < maxWordsAtOnce!) {
-      currentSubtitlesObj.text += ` ${word}`
+    const currentWordObjindex = trimmedTranscriptObj.indexOf(wordObj);
+    const nextWordObj = trimmedTranscriptObj[currentWordObjindex + 1];
+    // for last item of trimmedTranscriptObj
+    if (nextWordObj === undefined) {
+      currentSubtitlesObj.end = end;
+      // @ts-ignore
+      subtitlesObj.push(currentSubtitlesObj);
+      break;
+    }
+
+    const secondsBetweenCurrentAndNextWord =
+      Number((nextWordObj.start / 1000 - clip.time.start).toFixed(3)) - end;
+    const subtitlesObjTextIfNextWordAdded = currentSubtitlesObj.text + " " + nextWordObj.text;
+    const amountOfCharactersInSubtitlesObjIfNextWordAdded = subtitlesObjTextIfNextWordAdded.length;
+
+    if (
+      amountOfCharactersInSubtitlesObjIfNextWordAdded >= maxCharactersAtOnce &&
+      !currentSubtitlesObj.text.includes("\n")
+    ) {
+      currentSubtitlesObj.text += `\n${word}`;
     } else {
-      currentSubtitlesObj.text += ` ${word}`
-      currentSubtitlesObj.end = end
-      console.log(currentSubtitlesObj)
-      subtitlesObj.push(currentSubtitlesObj)
-      
-      currentSubtitlesObj.text = undefined
-      currentSubtitlesObj.start = undefined
-      currentSubtitlesObj.end = undefined
+      currentSubtitlesObj.text += ` ${word}`;
+    }
 
-      maxWordsAtOnce = undefined
+    if (
+      currentSubtitlesObj.text.split(/ |\n/).length >= maxWordsAtOnce ||
+      /[.!?,]/.test(currentSubtitlesObj.text.slice(-1)) ||
+      secondsBetweenCurrentAndNextWord >= minimumSecondsBetweenWords
+    ) {
+      currentSubtitlesObj.end = end;
+      // @ts-ignore
+      subtitlesObj.push(currentSubtitlesObj);
+
+      currentSubtitlesObj = {
+        text: undefined,
+        start: undefined,
+        end: undefined,
+      };
     }
   }
-  return
 
+  const subtitles = subtitlesObj
+    .map(({ text, start, end }) => {
+      text = text.replace(/'/g, "").replace(/"/g, "");
+
+      return `drawtext=text='${text}':fontfile='src/actions/processMedia/misc/roboto-bold.ttf':x=(w-text_w)/2:y=(h-text_h)/2:fontsize=70:fontcolor=white:borderw=8:bordercolor=black:enable='between(t,${start},${end})':text_align=C`;
+    })
+    .join(",");
+
+  // process brainrot clip
 
   const brainrotClipCategory = Object.keys(
     clipEditConfig.brainrotClip
@@ -94,23 +146,22 @@ export async function processClip({
 
   const brainrotClipURL = `https://clipsfast.s3.amazonaws.com/public/${brainrotClipCategory}-${clipEditConfig.brainrotClip[brainrotClipCategory]}.mp4`;
 
-  console.log(directURLs);
+  // process final video
 
   const processingOptions = [
     "-ss",
     clip.time.start,
     "-i",
-    directURLs.videoAndAudio, // 1: blur
+    directURLs.videoAndAudio, // 0: blur
 
     "-ss",
     clip.time.start,
     "-i",
-    directURLs.video, // 2: main
+    directURLs.video, // 1: main
 
     "-i",
-    brainrotClipURL, // 3: brainrot clip
+    brainrotClipURL, // 2: brainrot clip
   ];
-
   const videoEditingOptions = [
     "-filter_complex",
     `
@@ -124,9 +175,7 @@ export async function processClip({
     [darken-bg-blur-video][main-video]overlay=(W-w)/2:(H/2)-h[main-video-darken-bg-blur-video];
     [main-video-darken-bg-blur-video][brainrot-video]overlay=(W-w)/2:(H)/2[output-nosubtitles];
 
-
-    [output-nosubtitles]
-
+    [output-nosubtitles]${subtitles.length ? subtitles : "null"}
     `,
     "-t",
     `${clip.time.end - clip.time.start}`,
@@ -139,66 +188,99 @@ export async function processClip({
     "superfast",
     "-crf",
     "23",
-    "-threads",
-    "1", // TO TEST VERCEL
+    "-c:a",
+    "copy",
     "-y", // Overwrite output file if it already exists
   ];
 
-  const ffmpegProcess = spawn("ffmpeg", [
-    "-loglevel",
-    "verbose",
+  const ffmpegProcessClip = spawn("ffmpeg", [
+    '-loglevel', 'verbose',
     ...processingOptions,
     ...videoEditingOptions,
     ...encodingOptions,
-    `src/actions/processMedia/videos/asdf.mp4`, // Output file path
+    "output.mp4",
   ]);
+
+  /////video freezes at start for lil and its also longer than supposed
+  //////its just streaming it that fucks it up i think, saving it works, i tested
+
   const startTime = Date.now();
-  ffmpegProcess.stdout.on("data", (data) => {
+  ffmpegProcessClip.stdout.on("data", (data) => {
     console.log(`FFmpeg stdout: ${data}`);
   });
-
-  ffmpegProcess.stderr.on("data", (data) => {
+  ffmpegProcessClip.stderr.on("data", (data) => {
     console.log(`FFmpeg stderr: ${data}`);
   });
-  ffmpegProcess.on("error", (err) => {
+  ffmpegProcessClip.on("error", (err) => {
     console.error("FFmpeg error:", err);
+    throw new Error(err.message)
   });
-  ffmpegProcess.on("close", (code: number) => {
+  ffmpegProcessClip.on("close", (code: number) => {
     const endTime = Date.now();
     if (code === 0) {
-      console.log(`Processing finished successfully in ${(endTime - startTime) / 1000}s`);
+      console.log(`Video processing finished successfully in ${(endTime - startTime) / 1000}s`);
     } else {
       console.error(`FFmpeg process exited with code ${code}`);
     }
   });
 
-  const inputStream = new PassThrough();
-  /*
-  const downloadProcess = spawn('curl', ['-L', clip.mediaURL]);
-  downloadProcess.stdout.pipe(inputStream)
-    .on('error', (err) => {
-      console.error('Download error:', err);
-    })
-    .on('end', () => {
-      console.log('Downloaded video');
-    })
-  inputStream.pipe(ffmpegProcess.stdin);
-  */
+  const videoOutputStream = new PassThrough();
+  ffmpegProcessClip.stdout.pipe(videoOutputStream).on("error", (err) => {
+    console.error("Output stream error:", err);
+  });
 
-  /*
-  const outputStream = new PassThrough();
-  ffmpegProcess.stdout.pipe(outputStream);
-  outputStream.pipe(fs.createWriteStream("src/actions/processMedia/videos/test.mp4"))
-    .on('error', (err) => {
-      console.error('Output stream error:', err);
-    });
-  */
+  videoOutputStream.pipe(createWriteStream("output.mp4"));
+
+  return
+
+  // process thumbnail
+
+  const screenshotTimestamp = Number((Math.random() * (clip.time.end - clip.time.start)).toFixed(3))
+  const screenshotOptions = [
+    "-ss",
+    `${screenshotTimestamp}`, // Timestamp at which to capture the screenshot
+    "-vframes",
+    "1", // Capture only one frame
+    "-q:v",
+    "2", // Quality of the screenshot (lower values result in higher quality)
+  ];
+  
+  const ffmpegProcessThumbnail = spawn("ffmpeg", [
+    ...screenshotOptions,
+    "-i",
+    "pipe:0",
+    "output.png"
+  ])
+  
+  videoOutputStream.pipe(ffmpegProcessThumbnail.stdin);
+  
+  ffmpegProcessThumbnail.stderr.on("data", (data) => {
+    console.log(`FFmpeg stderr: ${data}`);
+  });
+  ffmpegProcessThumbnail.on("error", (err) => {
+    console.error("FFmpeg error:", err);
+    throw new Error(err.message)
+  });
+  ffmpegProcessThumbnail.on("close", (code: number) => {
+    if (code === 0) {
+      console.log(`Thumbnail generation finished successfully`);
+    } else {
+      console.error(`FFmpeg process exited with code ${code}`);
+    }
+  });
+
+  return
+
+  const processedClipGeneratedURL = await uploadStreamToS3(videoOutputStream, `clips/${clip.id}.mp4`);
+
+  const processedClipThumbnailURL = await uploadStreamToS3(videoOutputStream, `thumbnails/${clip.id}.jpg`);
 
   const processedClip: TClipProcessed = {
     ...clip,
-    generatedURL: "s3.aspdfonasdf",
-    thumbnail: "asdfasdfasdfasdfasdf /////////",
+    generatedURL: processedClipGeneratedURL,
+    thumbnail: processedClipThumbnailURL,
   };
+  
   return {
     processedClip,
   };
@@ -207,11 +289,13 @@ export async function processClip({
 export async function processExportClip({
   clip,
   userEmail,
-  directURL,
+  directURLs,
+  clipEditConfig
 }: {
   clip: TClip;
   userEmail: string;
-  directURL: string;
+  directURLs: ReturnType<typeof getIdealYoutubeVideoAndAudioOnClient> extends Promise<infer U> ? U : never;
+  clipEditConfig: TClipEditConfig;
 }) {
   const userDocRef = doc(db, "users", userEmail);
   const userDocData = (await getDoc(userDocRef)).data();
@@ -248,7 +332,7 @@ export async function processExportClip({
     clipEditConfig: {
       brainrotClip: { "fortnite-clip": 1 },
     },
-    directURLs: "asdfasdf REPLACE",
+    directURLs,
   });
 
   await updateDoc(userDocRef, {

@@ -29,6 +29,7 @@ import { db } from "@/config/firebase";
 import { processExportClip } from "@/actions/processMedia/processExportClip";
 
 import { v4 as uuidv4 } from "uuid";
+import { getIdealYoutubeVideoAndAudioOnClient } from "@/utils/getIdealYoutubeVideoAndAudioOnClient";
 
 export default function StudioProjectClipsPage() {
   const { user, userData } = UserAuth() as { user: any; userData: TUser | undefined };
@@ -274,7 +275,7 @@ export default function StudioProjectClipsPage() {
           </>
         )}
         <div className="text-xs sm:text-sm text-[var(--slight-gray)] flex items-center max-w-[350px]">
-          <div className="text-center">Processing in the background. You will be emailed when finished.</div>
+          <div className="text-center">Processes in the background. You will be emailed when finished.</div>
         </div>
       </div>
     );
@@ -282,10 +283,14 @@ export default function StudioProjectClipsPage() {
 
   function ClipsSection() {
     async function handleSelectClip(selectedClip: TClip) {
+      const directURLs = await getIdealYoutubeVideoAndAudioOnClient({url: selectedClip.mediaURL});
+
       const props = {
         clip: selectedClip,
-        userEmail: user.email,
+        userEmail: user.email as string,
+        directURLs
       };
+
       processExportClip(props);
       router.push(`/studio/project/${project.projectID}/clips/${selectedClip.id}`);
     }
@@ -313,7 +318,7 @@ export default function StudioProjectClipsPage() {
                 transition fade-in-5 border-2 relative min-w-[250px] lg:max-w-[380px] lg:min-w-[300px]
                 group/card px-6 hover:border-[var(--light-gray)] flex flex-col justify-between
                 w-full py-6 space-y-8"
-              key={clip.title + clip.url}
+              key={clip.title + clip.id}
             >
               <div className="space-y-4">
                 <div className="line-clamp-2 text-sm text-ellipsis text-[var(--slight-gray)]">

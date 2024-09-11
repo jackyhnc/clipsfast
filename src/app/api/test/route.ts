@@ -9,13 +9,12 @@ import { AssemblyAI } from "assemblyai";
 import { NextRequest, NextResponse } from "next/server";
 
 export async function POST(req: NextRequest, res: NextResponse) {
-
   const clip: TClip = {
     id: "asdf",
     mediaURL: "https://www.youtube.com/watch?v=k3VbMdmGmIo",
     time: {
-      start: 400,
-      end: 430,
+      start: 230,
+      end: 235,
     },
     title: "asdf",
     transcript: "asdf",
@@ -24,8 +23,6 @@ export async function POST(req: NextRequest, res: NextResponse) {
   };
 
   const directURLs = await getIdealYoutubeVideoAndAudioOnClient({url:clip.mediaURL, minimumVideoAndAudioItags: [18]});
-
-  console.log(`%c${directURLs}`, "color: purple");
 
   await processClip({ clip, clipEditConfig: { brainrotClip: { "fortnite-clip": 1 } }, directURLs });
 
