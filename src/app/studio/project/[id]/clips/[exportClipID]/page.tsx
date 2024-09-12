@@ -17,7 +17,7 @@ import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 
-export default async function ExportClipPage({ params }: { params: { exportClipID: string } }) {
+export default function ExportClipPage({ params }: { params: { exportClipID: string } }) {
   const { user } = UserAuth() as { user: any };
   const [isProcessesingClip, setIsProcessingClip] = useState(true);
 
@@ -31,8 +31,6 @@ export default async function ExportClipPage({ params }: { params: { exportClipI
 
       const clipsInProgress = userDoc.clipsInProgress;
       setIsProcessingClip(clipsInProgress.includes(params.exportClipID));
-
-      const clipsProcessed = userDoc.clipsProcessed;
     });
 
     return () => unsubscribe();
@@ -41,8 +39,8 @@ export default async function ExportClipPage({ params }: { params: { exportClipI
   function ClipProcessedPage() {
     const router = useRouter()
     useEffect(() => {
-      router.push(`/studio/clips-history/clip/${params.exportClipID}`)
-    },[])
+      router.push(`/studio/clips-history/`)
+    },[router])
     return (
       <div className="w-full h-lvh flex items-center justify-center flex-col">
         <div className="flex gap-1 w-fit">
@@ -134,7 +132,7 @@ export default async function ExportClipPage({ params }: { params: { exportClipI
             </DropdownMenu>
             <div className="text-sm text-[var(--slight-gray)] max-w-[400px] px-2">
               ⓘ You can leave this page anytime and the process will still be processing. You can view the
-              completed clip in the "Clips" tab in the sidebar.
+              completed clip in the `&quot;`Clips`&quot;` tab in the sidebar.
             </div>
           </div>
         </div>

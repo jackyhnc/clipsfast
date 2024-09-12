@@ -3,17 +3,14 @@
 import { TClip, TClipProcessed, TUser } from "@/app/studio/types";
 import { db } from "@/config/firebase";
 import { arrayRemove, arrayUnion, doc, getDoc, updateDoc } from "firebase/firestore";
-import Ffmpeg from "fluent-ffmpeg";
 import { PassThrough } from "stream";
 
 import { spawn } from "child_process";
 import { AssemblyAI } from "assemblyai";
-import { v4 } from "uuid";
-import { getIdealYoutubeVideoAndAudioOnClient } from "@/utils/getIdealYoutubeVideoAndAudioOnClient";
 import { uploadStreamToS3 } from "../uploadStreamToS3";
-import { createWriteStream } from "fs";
+import { getIdealYoutubeVideoAndAudioURLs } from "../getIdealYoutubeVideoAndAudioURLs";
 
-type TClipEditConfig = {
+export type TClipEditConfig = {
   brainrotClip:
     | { "fortnite-clip": 1 | 2 | 3 | 4 }
     | { "subway-surfers": 1 | 2 | 3 | 4 }
@@ -21,7 +18,7 @@ type TClipEditConfig = {
     | { "minecraft-bridge": 1 | 2 | 3 };
 };
 
-export async function processClip({
+async function processClip({
   clip,
   clipEditConfig,
   directURLs,
@@ -30,7 +27,6 @@ export async function processClip({
   clipEditConfig: TClipEditConfig;
   directURLs: any;
 }) {
-
   // process subtitles
 
   const client = new AssemblyAI({
@@ -182,27 +178,32 @@ export async function processClip({
   ];
 
   const encodingOptions = [
-    "-c:v",
-    "libx264",
+    // aac causes freezes in streaming?
     "-preset",
-    "superfast",
+    "ultrafast",
     "-crf",
-    "23",
-    "-c:a",
-    "copy",
+    "18",
+    "-maxrate",
+    "6M",
+    "-bufsize",
+    "12M",
+    "-f",
+    "mp4",
+    "-movflags",
+    "frag_keyframe+empty_moov+default_base_moof", // Enable streaming
+    "-frag_duration",
+    "5000000",
     "-y", // Overwrite output file if it already exists
   ];
 
   const ffmpegProcessClip = spawn("ffmpeg", [
-    '-loglevel', 'verbose',
+    "-loglevel",
+    "verbose",
     ...processingOptions,
     ...videoEditingOptions,
     ...encodingOptions,
-    "output.mp4",
+    "pipe:1", //stdout
   ]);
-
-  /////video freezes at start for lil and its also longer than supposed
-  //////its just streaming it that fucks it up i think, saving it works, i tested
 
   const startTime = Date.now();
   ffmpegProcessClip.stdout.on("data", (data) => {
@@ -213,7 +214,7 @@ export async function processClip({
   });
   ffmpegProcessClip.on("error", (err) => {
     console.error("FFmpeg error:", err);
-    throw new Error(err.message)
+    throw new Error(err.message);
   });
   ffmpegProcessClip.on("close", (code: number) => {
     const endTime = Date.now();
@@ -229,13 +230,14 @@ export async function processClip({
     console.error("Output stream error:", err);
   });
 
-  videoOutputStream.pipe(createWriteStream("output.mp4"));
-
-  return
+  const processedClipGeneratedURL = await uploadStreamToS3(
+    videoOutputStream,
+    `clips/${clip.title}-${clip.id}.mp4`
+  );
 
   // process thumbnail
 
-  const screenshotTimestamp = Number((Math.random() * (clip.time.end - clip.time.start)).toFixed(3))
+  const screenshotTimestamp = Number((Math.random() * (clip.time.end - clip.time.start)).toFixed(3));
   const screenshotOptions = [
     "-ss",
     `${screenshotTimestamp}`, // Timestamp at which to capture the screenshot
@@ -244,43 +246,57 @@ export async function processClip({
     "-q:v",
     "2", // Quality of the screenshot (lower values result in higher quality)
   ];
-  
+
+  console.log(processedClipGeneratedURL);
   const ffmpegProcessThumbnail = spawn("ffmpeg", [
-    ...screenshotOptions,
     "-i",
-    "pipe:0",
-    "output.png"
-  ])
-  
-  videoOutputStream.pipe(ffmpegProcessThumbnail.stdin);
-  
+    `${processedClipGeneratedURL}`,
+    ...screenshotOptions,
+    "-f",
+    "image2",
+    "-y",
+    "pipe:1",
+  ]);
+
+  videoOutputStream.pipe(ffmpegProcessThumbnail.stdin).on("error", (err) => {
+    console.error("Input stream error:", err);
+  });
+
+  const startTimeThumbnail = Date.now();
   ffmpegProcessThumbnail.stderr.on("data", (data) => {
     console.log(`FFmpeg stderr: ${data}`);
   });
   ffmpegProcessThumbnail.on("error", (err) => {
     console.error("FFmpeg error:", err);
-    throw new Error(err.message)
+    throw new Error(err.message);
   });
   ffmpegProcessThumbnail.on("close", (code: number) => {
     if (code === 0) {
-      console.log(`Thumbnail generation finished successfully`);
+      console.log(
+        `Thumbnail generation finished successfully in ${(Date.now() - startTimeThumbnail) / 1000}s`
+      );
     } else {
       console.error(`FFmpeg process exited with code ${code}`);
     }
   });
 
-  return
+  const thumbnailOutputStream = new PassThrough();
+  ffmpegProcessThumbnail.stdout.pipe(thumbnailOutputStream).on("error", (err) => {
+    console.error("Output stream error:", err);
+  });
 
-  const processedClipGeneratedURL = await uploadStreamToS3(videoOutputStream, `clips/${clip.id}.mp4`);
-
-  const processedClipThumbnailURL = await uploadStreamToS3(videoOutputStream, `thumbnails/${clip.id}.jpg`);
+  const processedClipThumbnailURL = await uploadStreamToS3(
+    thumbnailOutputStream,
+    `thumbnails/${clip.title}-${clip.id}.jpg`
+  );
 
   const processedClip: TClipProcessed = {
     ...clip,
     generatedURL: processedClipGeneratedURL,
     thumbnail: processedClipThumbnailURL,
   };
-  
+
+  console.log(processClip);
   return {
     processedClip,
   };
@@ -289,56 +305,65 @@ export async function processClip({
 export async function processExportClip({
   clip,
   userEmail,
-  directURLs,
-  clipEditConfig
+  clipEditConfig,
 }: {
   clip: TClip;
   userEmail: string;
-  directURLs: ReturnType<typeof getIdealYoutubeVideoAndAudioOnClient> extends Promise<infer U> ? U : never;
   clipEditConfig: TClipEditConfig;
 }) {
   const userDocRef = doc(db, "users", userEmail);
-  const userDocData = (await getDoc(userDocRef)).data();
-  const userDoc: TUser = {
-    email: userDocData?.email,
-    name: userDocData?.name,
-    projectsIDs: userDocData?.projectsIDs,
-    userPlan: userDocData?.userPlan,
-    minutesAnalyzedThisMonth: userDocData?.minutesAnalyzedThisMonth,
-    lifetimeMinutesAnalyzed: userDocData?.lifetimeMinutesAnalyzed,
-    actionsInProgress: userDocData?.actionsInProgress ?? [],
-    clipsInProgress: userDocData?.clipsInProgress ?? [],
-    clipsProcessed: userDocData?.clipsProcessed ?? [],
-  };
+  try {
+    const userDocData = (await getDoc(userDocRef)).data();
+    const userDoc: TUser = {
+      email: userDocData?.email,
+      name: userDocData?.name,
+      projectsIDs: userDocData?.projectsIDs,
+      userPlan: userDocData?.userPlan,
+      minutesAnalyzedThisMonth: userDocData?.minutesAnalyzedThisMonth,
+      lifetimeMinutesAnalyzed: userDocData?.lifetimeMinutesAnalyzed,
+      actionsInProgress: userDocData?.actionsInProgress ?? [],
+      clipsInProgress: userDocData?.clipsInProgress ?? [],
+      clipsProcessed: userDocData?.clipsProcessed ?? [],
+    };
 
-  const maxAmountOfClipsUserCanProcess = 15;
-  if (userDoc.clipsInProgress.length >= maxAmountOfClipsUserCanProcess) {
-    throw new Error("You have reached the max amount of clips in progress. Please try again later.");
+    const maxAmountOfClipsUserCanProcess = 15;
+    if (userDoc.clipsInProgress.length >= maxAmountOfClipsUserCanProcess) {
+      throw new Error("You have reached the max amount of clips in progress. Please try again later.");
+    }
+
+    if (userDoc.clipsInProgress.includes(clip)) {
+      throw new Error("You are already processing this clip. Please try again later.");
+    }
+    if (userDoc.clipsProcessed.map((clip) => clip.id).includes(clip.id)) {
+      throw new Error("You already processed this clip. Find it in your clips history tab.");
+    }
+
+    await updateDoc(userDocRef, {
+      clipsInProgress: arrayUnion(clip),
+    });
+
+    const directURLs = await getIdealYoutubeVideoAndAudioURLs({
+      url: clip.mediaURL,
+      minimumVideoAndAudioItags: [18]
+    })
+    const processedClip = await processClip({
+      clip,
+      clipEditConfig,
+      directURLs,
+    });
+
+    await updateDoc(userDocRef, {
+      clipsInProgress: arrayRemove(clip),
+      clipsProcessed: arrayUnion(processedClip),
+    });
+
+    return;
+  } catch (error: any) {
+
+    await updateDoc(userDocRef, {
+      clipsInProgress: arrayRemove(clip),
+    });
+
+    throw new Error(error.message);
   }
-
-  if (userDoc.clipsInProgress.includes(clip)) {
-    throw new Error("You are already processing this clip. Please try again later.");
-  }
-  if (userDoc.clipsProcessed.map((clip) => clip.id).includes(clip.id)) {
-    throw new Error("You already processed this clip. Find it in your clips history tab.");
-  }
-
-  await updateDoc(userDocRef, {
-    clipsInProgress: arrayUnion(clip),
-  });
-
-  const processedClip = await processClip({
-    clip,
-    clipEditConfig: {
-      brainrotClip: { "fortnite-clip": 1 },
-    },
-    directURLs,
-  });
-
-  await updateDoc(userDocRef, {
-    clipsInProgress: arrayRemove(clip),
-    clipsProcessed: arrayUnion(processedClip),
-  });
-
-  return;
 }

@@ -8,7 +8,7 @@ function VideoPlayer({
   url,
   aspectRatio = undefined,
   className = "",
-  autoPlay,
+  autoPlay = false,
   clipStartTime = 0,
   clipEndTime = undefined,
   controls = true,
@@ -38,6 +38,7 @@ function VideoPlayer({
       clipEndTime={clipEndTime}
       muted={muted}
       loop={loop}
+
     >
       <MediaProvider />
     </MediaPlayer>

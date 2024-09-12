@@ -10,8 +10,6 @@ import { useEffect, useState } from "react";
 import {
   Dialog,
   DialogContent,
-  DialogDescription,
-  DialogFooter,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
@@ -24,12 +22,15 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Slider } from "@/components/ui/slider";
 import { StudioNavbar } from "@/components/StudioNavbar";
 import { useRouter } from "next/navigation";
-import { doc, updateDoc } from "firebase/firestore";
+import { doc, onSnapshot, updateDoc } from "firebase/firestore";
 import { db } from "@/config/firebase";
-import { processExportClip } from "@/actions/processMedia/processExportClip";
-
-import { v4 as uuidv4 } from "uuid";
-import { getIdealYoutubeVideoAndAudioOnClient } from "@/utils/getIdealYoutubeVideoAndAudioOnClient";
+import { TClipEditConfig, processExportClip } from "@/actions/processMedia/processExportClip";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 export default function StudioProjectClipsPage() {
   const { user, userData } = UserAuth() as { user: any; userData: TUser | undefined };
@@ -115,7 +116,6 @@ export default function StudioProjectClipsPage() {
         };
 
         await processMediaIntoClipsAndUserMinutesAnalyzedLogic(props);
-        //await new Promise(resolve => setTimeout(resolve, 100000));
       } catch (error) {
         setIsGeneratingClips(false);
         throw new Error("Something went wrong. Please try again.");
@@ -130,13 +130,16 @@ export default function StudioProjectClipsPage() {
 
     const [isGeneratingClips, setIsGeneratingClips] = useState(false);
     useEffect(() => {
-      const mediaAlreadyInProcess = userData?.actionsInProgress
-        .map((action) => action.mediaURLBeingAnalyzed)
-        .includes(media.url);
-      if (mediaAlreadyInProcess) {
-        setIsGeneratingClips(true);
-      }
-    }, [userData]);
+      const unsubscribe = onSnapshot(doc(db, "users", user.email), (doc) => {
+        const user = doc.data() as TUser
+
+        if(user.actionsInProgress.map((action) => action.mediaURLBeingAnalyzed).includes(media.url)) {
+          setIsGeneratingClips(true)
+        }
+      })
+
+      return () => unsubscribe()
+    });
 
     const [generatingClipProgress, setGeneratingClipsProgress] = useState(0);
     //add bs to progress bar
@@ -282,18 +285,26 @@ export default function StudioProjectClipsPage() {
   }
 
   function ClipsSection() {
-    async function handleSelectClip(selectedClip: TClip) {
-      const directURLs = await getIdealYoutubeVideoAndAudioOnClient({url: selectedClip.mediaURL});
-
+    async function handleSelectClip(selectedClip: TClip, clipEditConfig: TClipEditConfig) {
       const props = {
         clip: selectedClip,
         userEmail: user.email as string,
-        directURLs
+        clipEditConfig: clipEditConfig,
       };
-
       processExportClip(props);
       router.push(`/studio/project/${project.projectID}/clips/${selectedClip.id}`);
     }
+
+    const [clipEditConfig, setClipEditConfig] = useState<TClipEditConfig>({
+      brainrotClip: { "fortnite-clip": 1 },
+    });
+    const brainrotClipObj = {
+      "fortnite-clip": [1, 2, 3, 4],
+      "subway-surfers": [1, 2, 3, 4],
+      "minecraft-parkour": [1, 2, 3, 4],
+      "minecraft-bridge": [1, 2, 3],
+    };
+
     return (
       <div
         className="grid gap-x-8 gap-y-10 bg-[var(--bg-white)] rounded-lg
@@ -382,14 +393,71 @@ export default function StudioProjectClipsPage() {
                               <div className="pl-2 hidden sm:block">{`${startTimestamp} to ${endTimestamp}`}</div>
                             </div>
                           </div>
-                          <Button
-                            onClick={() => {
-                              handleSelectClip(clip);
-                            }}
-                            className="bg-[var(--salmon-orange)] justify-end"
-                          >
-                            Select Clip
-                          </Button>
+                          <Dialog>
+                            <DialogTrigger>
+                              <Button className="bg-[var(--salmon-orange)] justify-end">Select Clip</Button>
+                            </DialogTrigger>
+                            <DialogContent>
+                              <DialogTitle>Select the Engaging Clip!</DialogTitle>
+                              <div className="p-4 space-y-4">
+                                <div className="flex flex-col gap-2">
+                                  <VideoPlayer
+                                    url={`https://clipsfast.s3.amazonaws.com/public/${
+                                      Object.keys(clipEditConfig.brainrotClip)[0]
+                                    }-${
+                                      clipEditConfig.brainrotClip[
+                                        Object.keys(
+                                          clipEditConfig.brainrotClip
+                                        )[0] as keyof TClipEditConfig["brainrotClip"]
+                                      ]
+                                    }.mp4`}
+                                    className="rounded-lg w-full"
+                                    autoPlay={false}
+                                  />
+                                  <div className="w-full flex justify-center">
+                                    {`${Object.keys(clipEditConfig.brainrotClip)[0]}-${clipEditConfig.brainrotClip[Object.keys(clipEditConfig.brainrotClip)[0] as keyof TClipEditConfig["brainrotClip"]]}`}
+                                  </div>
+                                </div>
+
+                                <div className="w-full flex justify-between">
+                                  <DropdownMenu>
+                                    <DropdownMenuTrigger>
+                                      <Button variant="outline">Change the Brainrot Clip</Button>
+                                    </DropdownMenuTrigger>
+                                    <DropdownMenuContent>
+                                      {Object.entries(brainrotClipObj).map(([category, nums]) => {
+                                        return nums.map((num) => (
+                                          <DropdownMenuItem
+                                            key={`${category}-${num}`}
+                                            onClick={() => {
+                                              // @ts-ignore
+                                              setClipEditConfig((prev) => ({
+                                                ...prev,
+                                                brainrotClip: {
+                                                  [category]: num,
+                                                },
+                                              }));
+                                              console.log(clipEditConfig);
+                                            }}
+                                          >
+                                            {`${category}-${num}`}
+                                          </DropdownMenuItem>
+                                        ));
+                                      })}
+                                    </DropdownMenuContent>
+                                  </DropdownMenu>
+                                  <Button
+                                    onClick={() => {
+                                      handleSelectClip(clip, clipEditConfig);
+                                    }}
+                                    className="bg-[var(--salmon-orange)] justify-end"
+                                  >
+                                    Edit Clip
+                                  </Button>
+                                </div>
+                              </div>
+                            </DialogContent>
+                          </Dialog>
                         </div>
                       </div>
                     </div>

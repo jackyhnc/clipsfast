@@ -38,6 +38,7 @@ export async function processMediaIntoClips({
   };
   minutesToAnalyze: number;
 }) {
+  const originalMediaURL = mediaURL;
   if (!mediaURL) {
     throw new Error("Media URL is required.");
   }
@@ -131,6 +132,7 @@ export async function processMediaIntoClips({
 
   5. Extract the transcript for each selected clip:
   - Use the transcript as guidance for creating the transcript
+  - Ensure the transcript and the timestamp for each clip match. Do not hullicate.
 
   6. Format your output as a single line of JSON in the following structure:
   [
@@ -210,7 +212,7 @@ export async function processMediaIntoClips({
         start: Math.floor(segment.start),
         end: Math.ceil(segment.end),
       },
-      mediaURL,
+      mediaURL: originalMediaURL,
 
       creationTime,
     };

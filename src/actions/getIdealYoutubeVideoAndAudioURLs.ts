@@ -1,7 +1,8 @@
+"use server";
+
 import ytdl from "@distube/ytdl-core";
 
-
-export async function getIdealYoutubeVideoAndAudioOnClient({
+export async function getIdealYoutubeVideoAndAudioURLs({
   url,
   idealVideoItags = [137, 136, 135], //mp4
   idealAudioItags = [141, 140], //m4a
@@ -13,6 +14,8 @@ export async function getIdealYoutubeVideoAndAudioOnClient({
   minimumVideoAndAudioItags?: number[];
 }): Promise<{ video: string | undefined; audio: string | undefined; videoAndAudio: string | undefined }> {
   try {
+    console.log("/////////////////////////@@@@@@@@@@@@")
+    console.log(url)
     const youtubeInfo = await ytdl.getInfo(url);
 
     function getIdealVideoURL() {

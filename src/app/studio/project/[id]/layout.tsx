@@ -55,7 +55,7 @@ export default function StudioProjectLayout({
       setFetchingProjectState(false);
     });
     return () => unsubscribe();
-  }, [params.id, router, setFetchingProjectState, setProject]);
+  }, [params.id, router, setFetchingProjectState, setProject, user.email]);
 
   /*
 

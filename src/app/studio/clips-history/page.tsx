@@ -11,29 +11,21 @@ import {
   DialogHeader,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import VideoPlayer from "@/components/VideoPlayer";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { doc, onSnapshot } from "firebase/firestore";
+import { db } from "@/config/firebase";
 
-export default async function ClipsProcessedHistoryPage() {
-  //const { user, userData } = UserAuth() as { user: any; userData: TUser | undefined };
-  const clips: Array<TClipProcessed> = [
-    {
-      mediaURL: "asdfasdf.com",
-      id: "k1lj2n3kj1n2k3j",
-      title: "cool ass casdfasdfasdfasdfsadflip lkajsdfajsdfas",
-      transcript:
-        "transcrip tcool ass transcript OMGGG transcrip tcool ass transcript transcrip tcool ass transcript transcrip tcool ass transcript transcrip tcool ass transcript transcrip tcool ass transcript transcrip tcool ass transcript transcrip tcool ass transcript transcrip tcool ass transcript transcrip tcool ass transcript transcrip tcool ass transcript ",
-      time: {
-        start: 0,
-        end: 10,
-      },
-      generatedURL: "s3/asdfasdfasdf.com/mp3",
-      creationTime: Date.now(),
-      thumbnail:
-        "https://clipsfast.s3.amazonaws.com/public/284BA690-EB16-4797-AD1B-0BE65F1FCC2C_1_201_a.jpeg",
-    },
-  ]
+export default function ClipsProcessedHistoryPage() {
+  const { user, userData } = UserAuth() as { user: any; userData: TUser | undefined };
+
+  const [processedClips, setProcessedClips] = useState<TClipProcessed[]>([]);
+
+  useEffect(() => {
+    setProcessedClips(userData?.clipsProcessed ?? []);
+  }, [userData]);
+
   function getFormatSecondsToTimestamp(seconds: number) {
     const minute = Math.floor(seconds / 60)
       .toString()
@@ -41,12 +33,11 @@ export default async function ClipsProcessedHistoryPage() {
     const second = (seconds % 60).toString().padStart(2, "0");
     return `${minute}:${second}`;
   }
-
   function ProcessedClipsSection() {
     return (
       <div className="">
         <div className="flex bg-[var(--bg-white)] gap-4 flex-wrap">
-          {clips.map((clip) => {
+          {processedClips.map((clip) => {
             const clipDateObj = new Date(clip.creationTime);
             const clipDate = clipDateObj.toLocaleDateString("en-US", {
               year: "numeric",
@@ -60,7 +51,7 @@ export default async function ClipsProcessedHistoryPage() {
             const duration = clip.time.end - clip.time.start;
 
             return (
-              <div className="flex border-2 rounded-md p-4 gap-4 hover:border-[var(--light-gray)] transition-all relative">
+              <div key={clip.id} className="flex border-2 rounded-md p-4 gap-4 hover:border-[var(--light-gray)] transition-all relative">
                 <div className="w-[85px] h-[150px] bg-[var(--slight-gray)] relative rounded-md overflow-hidden">
                   <Image src={clip.thumbnail} alt="project thumbnail" fill />
                 </div>
