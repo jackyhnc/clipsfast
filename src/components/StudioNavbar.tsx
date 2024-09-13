@@ -22,11 +22,9 @@ export function StudioNavbar({ breadCrumbItems }: { breadCrumbItems: Array<TBrea
 
               if (index === breadCrumbItems.length - 1) {
                 return (
-                  <>
-                    <BreadcrumbItem key={index}>
-                      <BreadcrumbPage>{item.name}</BreadcrumbPage>
-                    </BreadcrumbItem>
-                  </>
+                  <BreadcrumbItem key={index}>
+                    <BreadcrumbPage>{item.name}</BreadcrumbPage>
+                  </BreadcrumbItem>
                 );
               }
 

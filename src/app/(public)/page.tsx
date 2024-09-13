@@ -6,30 +6,24 @@ import Link from "next/link";
 function CallToActionButton({ children }: { children: React.ReactNode }) {
   return (
     <Link href="/signup" className="w-fit">
-      <Button className="w-52 bg-[var(--salmon-orange)] text-lg font-semibold px-4 py-6">
-        {children}
-      </Button>
+      <Button className="w-52 bg-[var(--salmon-orange)] text-lg font-semibold px-4 py-6">{children}</Button>
     </Link>
   );
 }
 export default function Home() {
   return (
-    <div className="flex flex-col bg-[var(--bg-white)] text-[var(--purple-black)] font-medium">
+    <div className="flex flex-col bg-[var(--bg-white)] text-[var(--purple-black)] font-medium mt-14">
       <div className="w-lvw h-[800px]">
-        <div className="grid grid-cols-2 items-center size-full px-10">
+        <div className="grid grid-cols-1 md:grid-cols-2 items-center size-full px-10">
           <div className="mx-6 py-auto flex flex-col gap-14">
             <div className="text-[var(--purple-black)] items-center justify-center flex flex-col gap-6">
               <div className="font-extrabold text-7xl">
                 Generate shorts from videos
-                <span className="text-[var(--salmon-orange)] font-extrabold">
-                  {" "}
-                  easily & instantly
-                </span>
+                <span className="text-[var(--salmon-orange)] font-extrabold"> easily & instantly</span>
               </div>
               <div className="text-lg">
-                Extract the highlights of existing videos with ai and create
-                engaging short videos. Let AI save you time and make content
-                creation effortless.
+                Extract the highlights of existing videos with ai and create engaging short videos. Let AI
+                save you time and make content creation effortless.
               </div>
             </div>
 
@@ -39,20 +33,23 @@ export default function Home() {
               </div>
             </div>
           </div>
-          <div className="flex items-center justify-center size-full">
+          <div className="flex items-center justify-center size-full relative">
+            <div className="bg-[var(--bg-yellow-white)] w-[400px] h-[300px] blur-2xl p-10">
+            </div>
             <Image
-              src={"/assets/home/printer-asset.png"}
-              alt="printer picture asset"
-              width={400}
-              height={0}
-              quality={100}
-            />
+                src={"/assets/home/printer-asset.png"}
+                alt="printer picture asset"
+                width={300}
+                height={0}
+                quality={100}
+                className="absolute"
+              />
           </div>
         </div>
       </div>
 
       <div className="w-lvw h-[800px]">
-        <div className="grid grid-cols-2 items-center size-full px-10">
+        <div className="grid grid-cols-1 md:grid-cols-2 items-center size-full px-10">
           <div className="">
             <Image
               src={"/assets/home/comparison-chart.png"}
@@ -65,18 +62,16 @@ export default function Home() {
           </div>
 
           <div className="space-y-10 px-10">
-            <div className="space-y-6">
+            <div className="space-y-6 pb-5">
               <div className="font-extrabold text-5xl">
-                We <span className="text-[var(--salmon-orange)]">don&apos;t</span>{" "}
-                inflate our prices!
+                We <span className="text-[var(--salmon-orange)]">don&apos;t</span> inflate our prices!
               </div>
               <div className="text-lg">
-                Pay for what you use. Don&apos;t let pricey services f*ck you over!
-                Most services charge way too much for their AI integrated
-                services, when they don&apos;t need to.
+                Pay for what you use. Don&apos;t let pricey services f*ck you over! Most services charge way
+                too much for their AI integrated services, when they don&apos;t need to.
               </div>
             </div>
-            <CallToActionButton>Just join bro.</CallToActionButton>
+            <CallToActionButton>Join now!</CallToActionButton>
           </div>
         </div>
       </div>
@@ -90,9 +85,7 @@ export default function Home() {
               className="underline text-purple-300 flex ml-1"
             >
               <Image
-                src={
-                  "https://upload.wikimedia.org/wikipedia/commons/a/a5/Instagram_icon.png"
-                }
+                src={"https://upload.wikimedia.org/wikipedia/commons/a/a5/Instagram_icon.png"}
                 alt="instagram logo"
                 width={0}
                 height={0}

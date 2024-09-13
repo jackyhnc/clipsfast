@@ -346,7 +346,7 @@ export async function processExportClip({
       url: clip.mediaURL,
       minimumVideoAndAudioItags: [18]
     })
-    const processedClip = await processClip({
+    const { processedClip } = await processClip({
       clip,
       clipEditConfig,
       directURLs,

@@ -28,10 +28,10 @@ const nextConfig = {
       },
       {
         protocol: 'https',
-        hostname: 'clipsfast.s3.amazonaws.com',
+        hostname: '*.amazonaws.com',
         port: '',
         pathname: '/**',
-      }
+      },
     ],
   },
 };

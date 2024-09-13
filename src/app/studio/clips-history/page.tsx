@@ -14,16 +14,20 @@ import { Button } from "@/components/ui/button";
 import { useEffect, useState } from "react";
 import VideoPlayer from "@/components/VideoPlayer";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { doc, onSnapshot } from "firebase/firestore";
-import { db } from "@/config/firebase";
 
 export default function ClipsProcessedHistoryPage() {
   const { user, userData } = UserAuth() as { user: any; userData: TUser | undefined };
 
   const [processedClips, setProcessedClips] = useState<TClipProcessed[]>([]);
 
+  const [fetchingProcessedClips, setFetchingProcessedClips] = useState(true);
+
   useEffect(() => {
+    if (!userData) {
+      return
+    }
     setProcessedClips(userData?.clipsProcessed ?? []);
+    setFetchingProcessedClips(false);
   }, [userData]);
 
   function getFormatSecondsToTimestamp(seconds: number) {
@@ -45,10 +49,10 @@ export default function ClipsProcessedHistoryPage() {
               day: "2-digit",
             });
 
-            const startTimestamp = getFormatSecondsToTimestamp(clip.time.start);
-            const endTimestamp = getFormatSecondsToTimestamp(clip.time.end);
+            const startTimestamp = getFormatSecondsToTimestamp(clip.time?.start);
+            const endTimestamp = getFormatSecondsToTimestamp(clip.time?.end);
 
-            const duration = clip.time.end - clip.time.start;
+            const duration = clip.time?.end - clip.time.start;
 
             return (
               <div key={clip.id} className="flex border-2 rounded-md p-4 gap-4 hover:border-[var(--light-gray)] transition-all relative">
@@ -209,7 +213,13 @@ export default function ClipsProcessedHistoryPage() {
     <div className="size-full flex flex-col items-center mt-20">
       <div className="flex flex-col items-center justify-center space-y-14 w-full">
         <nav className="font-semibold text-2xl w-full text-start">Clips History</nav>
-        <ProcessedClipsSection />
+        {fetchingProcessedClips ? (
+          <div className="">Fetching your clips...</div>
+        ) : processedClips.length === 0 ? (
+          <div className="">No processed clips yet</div>
+        ) : (
+          <ProcessedClipsSection />
+        )}
       </div>
     </div>
   );

@@ -18,22 +18,16 @@ import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 
 export default function ExportClipPage({ params }: { params: { exportClipID: string } }) {
-  const { user } = UserAuth() as { user: any };
+  const { user, userData } = UserAuth() as { user: any, userData: TUser | undefined };
   const [isProcessesingClip, setIsProcessingClip] = useState(true);
 
   useEffect(() => {
-    const userDocRef = doc(db, "users", user.email);
-    const unsubscribe = onSnapshot(userDocRef, async (snapshot) => {
-      const userDoc = snapshot.data();
-      if (!userDoc) {
-        throw new Error("User not found");
-      }
+    if (!userData) {
+      return
+    }
 
-      const clipsInProgress = userDoc.clipsInProgress;
-      setIsProcessingClip(clipsInProgress.includes(params.exportClipID));
-    });
-
-    return () => unsubscribe();
+    const userClipsInProgressIDs = userData?.clipsInProgress.map((clip) => clip.id) ?? [];
+    setIsProcessingClip(userClipsInProgressIDs.includes(params.exportClipID));
   });
 
   function ClipProcessedPage() {

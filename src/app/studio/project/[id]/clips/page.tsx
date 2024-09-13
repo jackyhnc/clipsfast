@@ -31,6 +31,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { toast } from "@/components/ui/use-toast";
 
 export default function StudioProjectClipsPage() {
   const { user, userData } = UserAuth() as { user: any; userData: TUser | undefined };
@@ -116,9 +117,14 @@ export default function StudioProjectClipsPage() {
         };
 
         await processMediaIntoClipsAndUserMinutesAnalyzedLogic(props);
-      } catch (error) {
+      } catch (error: any) {
         setIsGeneratingClips(false);
-        throw new Error("Something went wrong. Please try again.");
+        toast({
+          title: error.message,
+          variant: "destructive",
+          duration: 2000,
+        })
+        throw new Error(error.message);
       }
       setIsGeneratingClips(false);
     };

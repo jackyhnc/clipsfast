@@ -41,9 +41,9 @@ function Sidebar(props: any) {
       icon: "fa-solid fa-house",
     },
     {
-      name: "Profile",
-      link: "/studio/profile",
-      icon: "fa-solid fa-user",
+      name: "Clips History",
+      link: "/studio/clips-history",
+      icon: "fa-solid fa-clock-rotate-left",
     },
     {
       name: "Usage",
@@ -54,11 +54,6 @@ function Sidebar(props: any) {
       name: "Settings",
       link: "/studio/settings",
       icon: "fa-solid fa-gear",
-    },
-    {
-      name: "Clips History",
-      link: "/studio/clips-history",
-      icon: "fa-solid fa-clock-rotate-left",
     },
   ];
 
@@ -218,28 +213,30 @@ export default function StudioLayout({ children }: { children: React.ReactNode }
     checkAuth();
   }, [router, toast]);
 
+  if (isUserValid) {
+    return (
+      <>
+        <Sidebar minimizedSidebar={minimizedSidebar} setMinimizedSidebar={setMinimizedSidebar} />
+        <div
+          className="px-4 sm:px-14 pb-20"
+          style={{
+            marginLeft: `${
+              minimizedSidebar
+                ? smallSidebarWidth
+                : typeof window && window.innerWidth > 630
+                ? bigSidebarWidth
+                : smallSidebarWidth
+            }px`,
+          }}
+        >
+          <ProjectsContextProvider>{children}</ProjectsContextProvider>
+        </div>
+      </>
+    );
+  }
+
+  
   try {
-    if (isUserValid) {
-      return (
-        <>
-          <Sidebar minimizedSidebar={minimizedSidebar} setMinimizedSidebar={setMinimizedSidebar} />
-          <div
-            className="px-4 sm:px-14 pb-20"
-            style={{
-              marginLeft: `${
-                minimizedSidebar
-                  ? smallSidebarWidth
-                  : typeof window && window.innerWidth > 630
-                  ? bigSidebarWidth
-                  : smallSidebarWidth
-              }px`,
-            }}
-          >
-            <ProjectsContextProvider>{children}</ProjectsContextProvider>
-          </div>
-        </>
-      );
-    }
   } catch (error: any) {
     toast({
       title: error.message,

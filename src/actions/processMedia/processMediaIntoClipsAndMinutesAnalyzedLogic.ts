@@ -106,6 +106,9 @@ export async function processMediaIntoClipsAndUserMinutesAnalyzedLogic({
     clipsProcessed: userDocSnapData?.clipsProcessed ?? [],
   };
   const userPlan = userDoc?.userPlan;
+  if (!userPlan) {
+    throw new Error("User plan not found.");
+  }
 
   const minutesUserAlreadyAnalyzed = userDoc.minutesAnalyzedThisMonth;
 
@@ -147,7 +150,7 @@ export async function processMediaIntoClipsAndUserMinutesAnalyzedLogic({
     // check if user has enough minutes to analyze video
     const minutesProvidedForPlan = getUserPlanMinutes(userPlan);
 
-    if (minutesUserAlreadyAnalyzed >= minutesProvidedForPlan) {
+    if (minutesUserAlreadyAnalyzed >= minutesProvidedForPlan!) {
       throw new Error("User already analyzed to the limit their plan allows for this month.");
     }
 
@@ -193,7 +196,7 @@ export async function processMediaIntoClipsAndUserMinutesAnalyzedLogic({
     const minutesAnalyzedFromVideo = minutesToAnalyze;
 
     let newMinutesUserAlreadyAnalyzed = minutesUserAlreadyAnalyzed + minutesAnalyzedFromVideo;
-    if (newMinutesUserAlreadyAnalyzed >= minutesProvidedForPlan) {
+    if (newMinutesUserAlreadyAnalyzed >= minutesProvidedForPlan!) {
       console.warn("User's analyze minutes for videos has met its plan limit.");
     }
 

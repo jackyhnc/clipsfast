@@ -23,7 +23,7 @@ export function getUserPlanMinutes(userPlan: TUser["userPlan"]) {
   }
 
   if (minutesProvided === undefined) {
-    throw new Error("Unable to get minutes analyzed for user plan.")
+    return undefined
   }
   return minutesProvided
 }
