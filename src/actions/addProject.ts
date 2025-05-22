@@ -2,7 +2,7 @@
 
 import { TProject } from "@/app/studio/types";
 import { v4 as uuidv4 } from "uuid";
-import ytdl from "ytdl-core";
+import ytdl from "@distube/ytdl-core";
 import { getYoutubeInfo } from "./getYoutubeInfo";
 import { db } from "@/config/firebase";
 import { arrayUnion, doc, getDoc, setDoc, updateDoc } from "firebase/firestore";
