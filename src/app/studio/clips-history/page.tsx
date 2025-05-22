@@ -41,7 +41,7 @@ export default function ClipsProcessedHistoryPage() {
     return (
       <div className="">
         <div className="flex bg-[var(--bg-white)] gap-4 flex-wrap">
-          {processedClips.map((clip) => {
+          {processedClips.sort((a, b) => b.creationTime - a.creationTime).map((clip) => {
             const clipDateObj = new Date(clip.creationTime);
             const clipDate = clipDateObj.toLocaleDateString("en-US", {
               year: "numeric",

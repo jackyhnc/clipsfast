@@ -297,8 +297,17 @@ export default function StudioProjectClipsPage() {
         userEmail: user.email as string,
         clipEditConfig: clipEditConfig,
       };
-      processExportClip(props);
-      router.push(`/studio/project/${project.projectID}/clips/${selectedClip.id}`);
+      try {
+        processExportClip(props);
+        router.push(`/studio/project/${project.projectID}/clips/${selectedClip.id}`);
+      } catch (error: any) {
+        toast({
+          title: `Clip export errored: ${error.message}`,
+          variant: "destructive",
+          duration: 2000,
+        })
+        router.push(`/studio/project/${project.projectID}/clips`);
+      }
     }
 
     const [clipEditConfig, setClipEditConfig] = useState<TClipEditConfig>({

@@ -29,6 +29,8 @@ export const AuthContextProvider = ({ children }: { children: React.ReactNode })
 
   // get firebase auth user
   const [user, setUser] = useState<any>(undefined);
+
+  const [clipBeingProcessed, setClipBeingProcessed] = useState(false);
   
   // get firebase db user data
   const [userData, setUserData] = useState<TUser | undefined>(undefined);
@@ -185,7 +187,7 @@ export const AuthContextProvider = ({ children }: { children: React.ReactNode })
   }, [user]);
 
   return (
-    <AuthContext.Provider value={{ userData, user, signup, signin, googleSignin, signout }}>
+    <AuthContext.Provider value={{ userData, user, signup, signin, googleSignin, signout, clipBeingProcessed, setClipBeingProcessed }}>
       {children}
     </AuthContext.Provider>
   );

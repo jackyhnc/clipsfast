@@ -102,6 +102,9 @@ export default function ExportClipPage({ params }: { params: { exportClipID: str
             <div className="text-2xl font-medium max-w-[700px] text-center">
               While you wait, keep yourself entertained with our collection of Brainrot videos 🧠🤯😂
             </div>
+            <div className="text-md max-w-[700px] text-center">
+              Process may take minutes depending on the length of the video you choose.
+            </div>
           </div>
           <div className="rounded-lg overflow-hidden w-[200px] sm:w-[400px] md:w-[600px]">
             <VideoPlayer

@@ -12,6 +12,7 @@ import { getIdealYoutubeVideoAndAudioFormats } from "../getIdealYoutubeVideoAndA
 import { sanitizeMediaURL } from "@/utils/sanitizeMediaURL";
 import ytdl from "@distube/ytdl-core";
 import { getS3ObjectURL } from "../getS3ObjectURL";
+import { useContext } from "react";
 
 export type TClipEditConfig = {
   brainrotClip:
@@ -30,7 +31,6 @@ async function processClip({
   clipEditConfig: TClipEditConfig;
   directURLs: any;
 }) {
-  // process subtitles
 
   const client = new AssemblyAI({
     apiKey: process.env.ASSEMBLYAI_API_KEY || "",
@@ -211,6 +211,8 @@ async function processClip({
   const startTime = Date.now();
   ffmpegProcessClip.stdout.on("data", (data) => {
     console.log(`FFmpeg stdout: ${data}`);
+
+    // ping to page
   });
   ffmpegProcessClip.stderr.on("data", (data) => {
     console.log(`FFmpeg stderr: ${data}`);
@@ -352,7 +354,7 @@ export async function processExportClip({
     const videoAndAudioKey = `media/videoandaudio/${sanitizedMediaURL}.mp4`
     const videoKey = `media/video/${sanitizedMediaURL}.mp4`
     const audioKey = `media/audio/${sanitizedMediaURL}.m4a`
-
+    
     let videoAndAudioURL = await getS3ObjectURL(videoAndAudioKey)
 
     if (!videoAndAudioURL) {
@@ -381,8 +383,6 @@ export async function processExportClip({
       video: videoURL,
       audio: audioURL,
     }
-
-    console.log(directURLs)
 
     const { processedClip } = await processClip({
       clip,
