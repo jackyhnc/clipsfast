@@ -34,7 +34,7 @@ export async function addProject(props: { projectName: string; mediaURL: string;
         if (!response.ok) {
           throw new Error("Failed to fetch video URL.");
         }
-
+        
         if (!(await isYoutubeVideoURLValid(mediaURL))) {
           const contentType = response.headers.get("content-type");
           if (!contentType?.startsWith("video")) {

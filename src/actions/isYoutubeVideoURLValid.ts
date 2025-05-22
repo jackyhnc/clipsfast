@@ -7,6 +7,7 @@ export async function isYoutubeVideoURLValid(mediaURL: string) {
     const info = await ytdl.getBasicInfo(mediaURL)
     return true
   } catch (error) {
+    console.log("Error in isYoutubeVideoURLValid", error)
     return false
   }
 }
