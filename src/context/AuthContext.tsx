@@ -166,7 +166,6 @@ export const AuthContextProvider = ({ children }: { children: React.ReactNode })
   const signout = async () => {
     try {
       await firebaseSignOut(auth);
-      router.push("/");
     } catch (error: any) {
       const errorMessage = error.message;
       console.error(error);

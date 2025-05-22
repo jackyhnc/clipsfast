@@ -4,10 +4,9 @@ import ytdl from "@distube/ytdl-core"
 
 export async function isYoutubeVideoURLValid(mediaURL: string) {
   try {
-    const info = await ytdl.getBasicInfo(mediaURL)
-    return true
+    return ytdl.validateURL(mediaURL)
   } catch (error) {
-    console.log("Error in isYoutubeVideoURLValid", error)
+    console.error("Error in isYoutubeVideoURLValid", error)
     return false
   }
 }
