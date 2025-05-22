@@ -17,33 +17,47 @@ import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 
+function ClipProcessedPage() {
+  const router = useRouter()
+  
+  return (
+    <div className="w-full h-lvh flex items-center justify-center flex-col">
+      <div className="flex gap-1 w-fit">
+        <div className="">🎉</div>
+        <div className="text-center w-fit">Your clip has been processed!</div>
+        <div className="">🎉</div>
+      </div>
+    </div>
+  )
+}
+
+// EVERYTIG WORKS BUT THIS PAGE, IT KEEPS GOING TO PROCCCESED PAGE THEN HISTORY, EVEN THO IT AINT PROCCESS YET
+
 export default function ExportClipPage({ params }: { params: { exportClipID: string } }) {
   const { user, userData } = UserAuth() as { user: any, userData: TUser | undefined };
   const [isProcessesingClip, setIsProcessingClip] = useState(true);
+  const router = useRouter();
 
   useEffect(() => {
     if (!userData) {
       return
     }
 
-    const userClipsInProgressIDs = userData?.clipsInProgress.map((clip) => clip.id) ?? [];
-    setIsProcessingClip(userClipsInProgressIDs.includes(params.exportClipID));
-  });
+    const userClipsProcessedIDs = userData?.clipsProcessed.map((clip) => clip.id) ?? [];
+    console.log("userClipsProcessedIDs @@@@@@@@", userClipsProcessedIDs)
+    console.log("params.exportClipID @@@@@@@@", params.exportClipID)
+    const done = userClipsProcessedIDs.includes(params.exportClipID);
 
-  function ClipProcessedPage() {
-    const router = useRouter()
-    useEffect(() => {
-      router.push(`/studio/clips-history/`)
-    },[router])
-    return (
-      <div className="w-full h-lvh flex items-center justify-center flex-col">
-        <div className="flex gap-1 w-fit">
-          <div className="">🎉</div>
-          <div className="text-center w-fit">Your clip has been processed!</div>
-          <div className="">🎉</div>
-        </div>
-      </div>
-    )
+    // If the clip is processed, redirect
+    if (done) {
+      console.log("done @@@@@@@@", done)
+      router.push(`/studio/clips-history/`);
+    }
+  }, [userData, params.exportClipID, router]);
+
+  // Show loading state while checking
+  if (!userData) {
+    return <div>Loading...</div>;
   }
 
   function ClipNotProcessedPage() {

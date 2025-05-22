@@ -104,9 +104,6 @@ export default function ClipsProcessedHistoryPage() {
                             <VideoPlayer
                               url={clip.generatedURL}
                               className="rounded-lg w-[100px] pb-2"
-                              clipStartTime={clip.time.start}
-                              clipEndTime={clip.time.end}
-                              autoPlay={false}
                             />
 
                             <div className="relative w-full pb-2">

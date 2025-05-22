@@ -199,13 +199,18 @@ export default function StudioLayout({ children }: { children: React.ReactNode }
     setMinimizedSidebar(smallScreen);
   }, [smallScreen]);
 
-  useEffect(() => {
+  useEffect(() => { 
     const checkAuth = () => {
       onAuthStateChanged(auth, (user) => {
         if (user) {
           setIsUserValid(true);
         } else {
           router.push("/");
+          toast({
+            title: "You need an account to access that page.",
+            variant: "destructive",
+            duration: 2000,
+          });
           console.error("You need an account to access that page.");
         }
       });

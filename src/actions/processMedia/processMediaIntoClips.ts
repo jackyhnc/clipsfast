@@ -1,14 +1,17 @@
 "use server";
 
-import ytdl from "@distube/ytdl-core";
-
 import { AssemblyAI } from "assemblyai";
 import Anthropic from "@anthropic-ai/sdk";
 import { TClip } from "@/app/studio/types";
 import { TextBlock } from "@anthropic-ai/sdk/resources/messages.mjs";
 import { getYoutubeInfo } from "@/actions/getYoutubeInfo";
 import { getVideoTypeClassification } from "@/utils/getVideoTypeClassification";
-import { v4 as uuidv4 } from "uuid"
+import { v4 as uuidv4 } from "uuid";
+import { uploadStreamToS3 } from "../uploadStreamToS3";
+import { PassThrough } from "stream";
+import { getIdealYoutubeVideoAndAudioFormats } from "../getIdealYoutubeVideoAndAudioItags";
+import ytdl from "@distube/ytdl-core";
+import { sanitizeMediaURL } from "@/utils/sanitizeMediaURL";
 
 if (!process.env.ASSEMBLYAI_API_KEY) {
   throw new Error("Missing ASSEMBLYAI_API_KEY.");
@@ -38,7 +41,6 @@ export async function processMediaIntoClips({
   };
   minutesToAnalyze: number;
 }) {
-  const originalMediaURL = mediaURL;
   if (!mediaURL) {
     throw new Error("Media URL is required.");
   }
@@ -46,34 +48,32 @@ export async function processMediaIntoClips({
     throw new Error("Minutes to analyze is required.");
   }
 
+  const originalMediaURL = mediaURL;
   const mediaType = await getVideoTypeClassification(mediaURL);
   const youtubeInfo = mediaType === "youtube" ? await getYoutubeInfo(mediaURL) : undefined;
 
-  async function getDirectYoutubeURL() {
-    const info = await ytdl.getInfo(mediaURL);
-
-    const idealAudioFormatObject =
-      info.formats.find((format) => format.itag === 37) ??
-      info.formats.find((format) => format.itag === 22) ??
-      info.formats.find((format) => format.itag === 18);
-
-    if (!idealAudioFormatObject) {
-      throw new Error("No audio format found in video. Please contact us.");
-    }
-
-    return idealAudioFormatObject.url;
-  }
+  let mediaURLForTranscription = mediaURL
   if (mediaType === "youtube") {
-    mediaURL = await getDirectYoutubeURL();
-  }
-  console.log(mediaURL);
+    const idealTags = await getIdealYoutubeVideoAndAudioFormats({url: mediaURL})
+    if (!idealTags.audio?.url ) {
+      throw new Error("No audio URL found.")
+    }
+    mediaURLForTranscription = idealTags.audio?.url 
+    // stream to aws and get the link and replace mediaurltranscript with it
 
+    const audioStream = ytdl(mediaURL, { quality: [idealTags.audio.itag] })
+    const audioPassThrough = new PassThrough();
+    audioStream.pipe(audioPassThrough)
+    const audioURL = await uploadStreamToS3(audioPassThrough, `audios/${await sanitizeMediaURL(mediaURL)}.m4a`)
+    mediaURLForTranscription = audioURL
+  } 
+  
   const secondsToAnalyze = minutesToAnalyze * 60;
   const params = {
-    audio: mediaURL,
+    audio: mediaURLForTranscription,
     audio_end_at: Math.floor(secondsToAnalyze * 1000), //in miliseconds
     speaker_labels: true,
-    //language_detection: true,
+    language_code: "en_us",
   };
 
   const transcript = await client.transcripts.transcribe(params);
@@ -81,6 +81,7 @@ export async function processMediaIntoClips({
   let currentSpeaker = undefined;
 
   const { sentences } = await client.transcripts.sentences(transcript.id);
+
   for (const sentence of sentences) {
     const speaker = sentence.speaker;
     const text = sentence.text;
@@ -153,7 +154,6 @@ export async function processMediaIntoClips({
 
   Process the inputs, select the most interesting and relevant clips, and provide your output in the specified JSON format without any additional commentary. Do not hallucinate.
   `;
-  console.log(claudePrompt);
 
   let amountOfAttempts = 0;
   const maxAmountOfAttempts = 2;
@@ -168,7 +168,7 @@ export async function processMediaIntoClips({
   while (amountOfAttempts < maxAmountOfAttempts) {
     try {
       const claudeResponse = await anthropicClient.messages.create({
-        model: "claude-3-5-sonnet-20240620",
+        model: "claude-3-7-sonnet-20250219",
         max_tokens: 8192,
         temperature: 0.8,
         system:
@@ -187,7 +187,7 @@ export async function processMediaIntoClips({
       });
 
       const claudeResponseText = (claudeResponse.content[0] as TextBlock).text;
-
+      console.log(claudePrompt)
       JSONParsedClaudeResponse = await JSON.parse(claudeResponseText);
       break;
     } catch (error: any) {

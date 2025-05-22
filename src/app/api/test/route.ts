@@ -1,8 +1,6 @@
 import { getYoutubeInfo } from "@/actions/getYoutubeInfo";
-import { isYoutubeVideoURLFormat, isYoutubeVideoURLValid } from "@/actions/isYoutubeVideoURLValid";
 import { processMediaIntoClips } from "@/actions/processMedia/processMediaIntoClips";
 import { TClip } from "@/app/studio/types";
-import ytdl from "@distube/ytdl-core";
 import { AssemblyAI } from "assemblyai";
 import { NextRequest, NextResponse } from "next/server";
 

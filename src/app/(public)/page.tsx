@@ -48,7 +48,7 @@ export default function Home() {
         </div>
       </div>
 
-      <div className="w-lvw h-[800px]">
+      <div className="w-lvw h-[800px]" id="pricing-section">
         <div className="grid grid-cols-1 md:grid-cols-2 items-center size-full px-10">
           <div className="">
             <Image

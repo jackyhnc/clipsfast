@@ -29,7 +29,7 @@ function Navbar() {
             </NavigationMenuItem>
             
             <NavigationMenuItem>
-              <Link href="/pricing" legacyBehavior passHref>
+              <Link href="#pricing-section" legacyBehavior passHref>
                 <NavigationMenuLink className={navigationMenuTriggerStyle()}>
                   Pricing
                 </NavigationMenuLink>

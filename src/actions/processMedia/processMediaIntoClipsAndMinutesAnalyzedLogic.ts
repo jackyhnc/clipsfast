@@ -118,7 +118,7 @@ export async function processMediaIntoClipsAndUserMinutesAnalyzedLogic({
   if (videosAlreadyBeingAnalyzed.includes(mediaURL)) {
     throw new Error(`You are already analyzing this video: ${mediaURL}.`);
   }
-  const maxAmountOfVideosUserCanAnalyze = 1;
+  const maxAmountOfVideosUserCanAnalyze = 5; /// TODO: MAKE SURE ALWAYS 5
   if (actionsInProgress.length >= maxAmountOfVideosUserCanAnalyze) {
     throw new Error(
       "You have maxed out at 5 videos processing at one time. Please wait for them to process."

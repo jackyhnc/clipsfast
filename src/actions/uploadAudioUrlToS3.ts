@@ -1,11 +1,10 @@
 "use server"
 
 import { S3Client, GetObjectCommand } from "@aws-sdk/client-s3";
-import { Upload } from '@aws-sdk/lib-storage';
+import { Upload } from "@aws-sdk/lib-storage";
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
-import { PassThrough, Readable } from "stream";
 
-export const uploadStreamToS3 = async (stream: Readable, keyFilePath: string) => {
+export const uploadAudioUrlToS3 = async (url: string, keyFilePath: string) => {
   if (!process.env.AWS_ACCESS_KEY_ID) {
     throw new Error("AWS_ACCESS_KEY_ID not set");
   }
@@ -15,6 +14,7 @@ export const uploadStreamToS3 = async (stream: Readable, keyFilePath: string) =>
   if (!process.env.AWS_REGION) {
     throw new Error("AWS_REGION not set");
   }
+
   const s3Client = new S3Client({
     credentials: {
       accessKeyId: process.env.AWS_ACCESS_KEY_ID,
@@ -23,17 +23,31 @@ export const uploadStreamToS3 = async (stream: Readable, keyFilePath: string) =>
     region: process.env.AWS_REGION,
   })
 
-  const uploadParams = {
-    Bucket: process.env.AWS_S3_BUCKET_NAME,
-    Key: keyFilePath,
-    Body: stream,
-  }
-  const upload = new Upload({
-    client: s3Client,
-    params: uploadParams,
-  })
+  try {
+    // Fetch file from URL
+    const response = await fetch(url);
+    if (!response.ok) {
+      throw new Error(`Failed to fetch: ${response.status} ${response.statusText}`);
+    }
+    const blob = await response.blob();
+    const s3Client = new S3Client({
+      credentials: {
+        accessKeyId: process.env.AWS_ACCESS_KEY_ID,
+        secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
+      },
+      region: process.env.AWS_REGION,
+    })
   
-  try {    
+    const uploadParams = {
+      Bucket: process.env.AWS_S3_BUCKET_NAME,
+      Key: keyFilePath,
+      Body: blob,
+    }
+    const upload = new Upload({
+      client: s3Client,
+      params: uploadParams,
+    })
+  
     await upload.done()
     console.log("Uploaded to: " + keyFilePath)
 
@@ -46,7 +60,7 @@ export const uploadStreamToS3 = async (stream: Readable, keyFilePath: string) =>
     const signedUrl = await getSignedUrl(s3Client, getObjectCommand); // no expiration on link
 
     return signedUrl
-  } catch(error) {
-    throw new Error("Error uploading to S3: " + error)
-  }
+    } catch(error) {
+      throw new Error("Error uploading to S3: " + error)
+    }
 }

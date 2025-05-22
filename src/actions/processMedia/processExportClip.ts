@@ -8,7 +8,10 @@ import { PassThrough } from "stream";
 import { spawn } from "child_process";
 import { AssemblyAI } from "assemblyai";
 import { uploadStreamToS3 } from "../uploadStreamToS3";
-import { getIdealYoutubeVideoAndAudioURLs } from "../getIdealYoutubeVideoAndAudioURLs";
+import { getIdealYoutubeVideoAndAudioFormats } from "../getIdealYoutubeVideoAndAudioItags";
+import { sanitizeMediaURL } from "@/utils/sanitizeMediaURL";
+import ytdl from "@distube/ytdl-core";
+import { getS3ObjectURL } from "../getS3ObjectURL";
 
 export type TClipEditConfig = {
   brainrotClip:
@@ -342,10 +345,45 @@ export async function processExportClip({
       clipsInProgress: arrayUnion(clip),
     });
 
-    const directURLs = await getIdealYoutubeVideoAndAudioURLs({
-      url: clip.mediaURL,
-      minimumVideoAndAudioItags: [18]
-    })
+    const tags = await getIdealYoutubeVideoAndAudioFormats({url: clip.mediaURL})
+
+    const sanitizedMediaURL = await sanitizeMediaURL(clip.mediaURL)
+
+    const videoAndAudioKey = `media/videoandaudio/${sanitizedMediaURL}.mp4`
+    const videoKey = `media/video/${sanitizedMediaURL}.mp4`
+    const audioKey = `media/audio/${sanitizedMediaURL}.m4a`
+
+    let videoAndAudioURL = await getS3ObjectURL(videoAndAudioKey)
+
+    if (!videoAndAudioURL) {
+      const videoAndAudioStream = ytdl(clip.mediaURL, { quality: [tags.videoAndAudio.itag] })
+      const videoAndAudioPassthrough = new PassThrough()
+      videoAndAudioStream.pipe(videoAndAudioPassthrough)
+      videoAndAudioURL = await uploadStreamToS3(videoAndAudioPassthrough, videoAndAudioKey)
+    }
+    let videoURL = await getS3ObjectURL(videoKey)
+    if (!videoURL) {
+      const videoStream = ytdl(clip.mediaURL, { quality: [tags.video.itag] })
+      const videoPassthrough = new PassThrough()
+      videoStream.pipe(videoPassthrough)
+      videoURL = await uploadStreamToS3(videoPassthrough, videoKey)
+    }
+    let audioURL = await getS3ObjectURL(audioKey)
+    if (!audioURL) {
+      const audioStream = ytdl(clip.mediaURL, { quality: [tags.audio.itag] })
+      const audioPassthrough = new PassThrough()
+      audioStream.pipe(audioPassthrough)
+      audioURL = await uploadStreamToS3(audioPassthrough, audioKey)
+    }
+
+    const directURLs = {
+      videoAndAudio: videoAndAudioURL,
+      video: videoURL,
+      audio: audioURL,
+    }
+
+    console.log(directURLs)
+
     const { processedClip } = await processClip({
       clip,
       clipEditConfig,
