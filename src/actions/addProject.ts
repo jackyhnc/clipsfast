@@ -34,19 +34,16 @@ export async function addProject(props: { projectName: string; mediaURL: string;
         if (!response.ok) {
           throw new Error("Failed to fetch video URL.");
         }
-        const contentType = response.headers.get("content-type");
-        if (!contentType?.startsWith("video")) {
-          throw new Error("URL is not a video URL or YouTube video.");
+
+        if (!(await isYoutubeVideoURLValid(mediaURL))) {
+          const contentType = response.headers.get("content-type");
+          if (!contentType?.startsWith("video")) {
+            throw new Error("URL is not a video URL or YouTube video.");
+          }
         }
-      } catch (error) {
-        throw new Error("Invalid video URL.");
-      }
-    };
-    const validateYoutubeURL = async (youtubeLink: string) => {
-      try {
-        ytdl.validateURL(youtubeLink);
-      } catch (error) {
-        throw new Error("Invalid YouTube link.");
+
+      } catch (error: any) {
+        throw new Error("Invalid video URL:", error.message);
       }
     };
 
